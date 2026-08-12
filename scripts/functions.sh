@@ -200,6 +200,13 @@ create_env_file() {
         ["HOMEPAGE_VAR_RADARR_URL"]="http://$SERVER_IP:7878"
         ["HOMEPAGE_VAR_PROWLARR_URL"]="http://$SERVER_IP:9696"
         ["HOMEPAGE_VAR_BAZARR_URL"]="http://$SERVER_IP:6767"
+        ["HOMEPAGE_VAR_HOMARR_URL"]="http://$SERVER_IP:7575"
+        ["HOMEPAGE_VAR_DECYPHARR_URL"]="http://$SERVER_IP:8282"
+        ["HOMEPAGE_VAR_JELLYFIN_API_KEY"]=""
+        ["HOMEPAGE_VAR_SONARR_API_KEY"]=""
+        ["HOMEPAGE_VAR_RADARR_API_KEY"]=""
+        ["HOMEPAGE_VAR_PROWLARR_API_KEY"]=""
+        ["HOMEPAGE_VAR_QBITTORRENT_PASSWORD"]=""
     )
 
     for key in "${!env_vars[@]}"; do
