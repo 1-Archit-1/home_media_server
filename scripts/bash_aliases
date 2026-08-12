@@ -29,13 +29,13 @@ alias dips="sudo docker ps -q | xargs -n 1 sudo docker inspect -f '{{.Name}}%tab
 alias dp600="sudo chown -R root:root $SECRETS ; sudo chmod -R 600 $SECRETS ; sudo chown -R root:root $ENV_FILE ; sudo chmod -R 600 $ENV_FILE" # re-lock permissions
 alias dp777="sudo chown -R $USER:$USER $SECRETS ; sudo chmod -R 777 $SECRETS ; sudo chown -R $USER:$USER $ENV_FILE ; sudo chmod -R 777 $ENV_FILE" # open permissions for editing
 
-# DOCKER COMPOSE TRAEFIK 2 - All docker-compose commands start with "dc" 
+# DOCKER COMPOSE - All docker-compose commands start with "dc"
 case $HOSTNAME in
     ds918) # synology at this point uses an old version of docker. Therefore, 'docker-compose' instead of 'docker compose'
       alias dcrun="sudo docker-compose -f $MASTER_COMPOSE" # /volume1/docker symlinked to /var/services/homes/user/docker
       ;;
     *)
-      alias dcrun="sudo docker compose --profile all -f $MASTER_COMPOSE"
+      alias dcrun="sudo docker compose -f $MASTER_COMPOSE"
       ;;
 esac
 
@@ -49,26 +49,7 @@ alias dcstart="dcrun start" # usage: dcstart container_name
 alias dcpull="dcrun pull" # usage: dcpull to pull all new images or dcpull container_name
 alias traefiklogs="tail -f $LOGS/$HOSTNAME/traefik/traefik.log" # tail traefik logs
 
-# Manage "core" services as defined by profiles in docker compose
-alias startcore="sudo docker compose --profile core -f $MASTER_COMPOSE start"
-alias createcore="sudo docker compose --profile core -f $MASTER_COMPOSE up -d --build --remove-orphans"
-alias stopcore="sudo docker compose --profile core -f $MASTER_COMPOSE stop"
-# Manage "media" services as defined by profiles in docker compose
-alias stopmedia="sudo docker compose --profile media -f $MASTER_COMPOSE stop"
-alias createmedia="sudo docker compose --profile media -f $MASTER_COMPOSE up -d --build --remove-orphans"
-alias startmedia="sudo docker compose --profile media -f $MASTER_COMPOSE start"
-# Manage "diwkiads" services as defined by profiles in docker compose
-alias stopdownloads="sudo docker compose --profile downloads -f $MASTER_COMPOSE stop"
-alias createdownloads="sudo docker compose --profile downloads -f $MASTER_COMPOSE up -d --build --remove-orphans"
-alias startdownloads="sudo docker compose --profile downloads -f $MASTER_COMPOSE start"
-# Manage Starr apps as defined by profiles in docker compose
-alias stoparrs="sudo docker compose --profile arrs -f $MASTER_COMPOSE stop"
-alias startarrs="sudo docker compose --profile arrs -f $MASTER_COMPOSE start"
-alias createarrs="sudo docker compose --profile arrs -f $MASTER_COMPOSE up -d --build --remove-orphans"
-# Manage "dbs" (database) services as defined by profiles in docker compose
-alias stopdbs="sudo docker compose --profile dbs -f $MASTER_COMPOSE stop"
-alias createdbs="sudo docker compose --profile dbs -f $MASTER_COMPOSE up -d --build --remove-orphans"
-alias startdbs="sudo docker compose --profile dbs -f $MASTER_COMPOSE start"
+
 
 # CROWDSEC
 alias cscli='dcrun exec -t crowdsec cscli'

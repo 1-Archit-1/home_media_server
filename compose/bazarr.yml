@@ -5,15 +5,15 @@ services:
     container_name: bazarr
     security_opt:
       - no-new-privileges:true
-    restart: "no"
-    # profiles: ["media", "arrs", "all"]
+    restart: unless-stopped
     networks:
       - default
     ports:
       - "6767:6767"
     volumes:
       - $DOCKERDIR/appdata/bazarr:/config
-      - $DATADIR/media:/media
+      - $DATADIR/media/movies:/data/media/movies
+      - $DATADIR/media/tvshows:/data/media/tvshows
     environment:
       TZ: $TZ
       PUID: $PUID

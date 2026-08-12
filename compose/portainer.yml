@@ -6,7 +6,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
-    # profiles: ["core", "all"]
     networks:
       - socket_proxy
     # command: -H unix:///var/run/docker.sock # # Use Docker Socket Proxy instead for improved security

@@ -5,15 +5,14 @@ services:
     container_name: radarr
     security_opt:
       - no-new-privileges:true
-    restart: "no"
-    # profiles: ["media", "arrs", "all"]
+    restart: unless-stopped
     networks:
       - default
     ports:
       - "7878:7878"
     volumes:
       - $DOCKERDIR/appdata/radarr:/config
-      - $DATADIR/media/movies:/movies
+      - $DATADIR/media/movies:/data/media/movies
       - $DATADIR/downloads:/data/downloads
       - "/etc/localtime:/etc/localtime:ro"
     environment:

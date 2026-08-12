@@ -6,7 +6,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
-    # profiles: ["core", "all"]
     networks:
       socket_proxy:
         ipv4_address: 192.168.91.254 # You can specify a static IP

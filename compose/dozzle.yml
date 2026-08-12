@@ -6,7 +6,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
-    # profiles: ["apps", "all"]
     networks:
       - socket_proxy
       - default

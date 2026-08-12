@@ -50,3 +50,4 @@ include:
   # MAINTENANCE
   - compose/docker-gc.yml
   - compose/watchtower.yml
+  - compose/homarr.yml 

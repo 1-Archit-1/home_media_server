@@ -7,8 +7,7 @@ services:
       - default
     security_opt:
       - no-new-privileges:true
-    restart: "no"
-    # profiles: ["media", "all"]
+    restart: unless-stopped
     user: $PUID:$PGID
     # devices:
     # - /dev/dri:/dev/dri # for harware transcoding
@@ -20,6 +19,5 @@ services:
       TZ: $TZ
     volumes:
       - $DOCKERDIR/appdata/jellyfin:/config
-      - $DATADIR/media:/media
-      #- $EXTDIR/ssd/home-server/downloads:/data/downloads
+      - $DATADIR/media:/data/media
       - /dev/shm:/data/transcode # Offload transcoding to RAM if you have enough RAM

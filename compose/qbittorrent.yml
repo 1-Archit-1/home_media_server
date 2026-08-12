@@ -6,7 +6,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
-    # profiles: ["apps", "downloads", "all"]
     networks:
       - default
     ports:
@@ -19,10 +18,10 @@ services:
       PUID: $PUID
       PGID: $PGID
       UMASK_SET: 002
-    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
-      test: "curl -sf https://example.com  || exit 1"
+    healthcheck:
+      test: "curl -sf http://localhost:8080 || exit 1"
       interval: 1m
       timeout: 10s
-      retries: 1
+      retries: 3
     labels: # Traefik labels added via glueten
       - "deunhealth.restart.on.unhealthy=true"

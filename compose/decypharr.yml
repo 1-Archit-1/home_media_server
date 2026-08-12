@@ -1,0 +1,28 @@
+services:
+  # Decypharr - Debrid Media Gateway (mock qBittorrent API for TorBox)
+  # Web UI: http://SERVER_IP:8282
+  # Add to Sonarr/Radarr as a qBittorrent download client pointing at http://decypharr:8282
+  # Toggle enabled/disabled in Sonarr/Radarr Settings > Download Clients to switch between TorBox and qBittorrent
+  decypharr:
+    image: cy01/blackhole:latest
+    container_name: decypharr
+    security_opt:
+      - no-new-privileges:true
+      - apparmor:unconfined
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "8282:8282"   # qBittorrent-compatible API + Web UI (*arrs point here)
+      - "8283:8283"   # WebDAV server (optional, for direct library mounting)
+    volumes:
+      - $DOCKERDIR/appdata/decypharr:/app
+      - $DATADIR/downloads:/data/downloads:rshared
+    devices:
+      - /dev/fuse:/dev/fuse:rwm                    # required for FUSE/rclone mount feature
+    cap_add:
+      - SYS_ADMIN                                  # required for FUSE mount
+    environment:
+      TZ: $TZ
+      PUID: $PUID
+      PGID: $PGID

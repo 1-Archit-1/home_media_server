@@ -64,9 +64,14 @@ install_docker() {
     # Check if curl is installed, if not, install it
     if ! command -v curl &> /dev/null; then
         echo "curl is not installed. Installing curl..."
-        sudo apt-get update || error_exit "Failed to update package list."
-        sudo apt-get install -y curl || error_exit "Failed to install curl."
-        echo "curl installed successfully."
+        if command -v dnf &> /dev/null; then
+            sudo dnf install -y curl || error_exit "Failed to install curl."
+        elif command -v apt-get &> /dev/null; then
+            sudo apt-get install -y curl || error_exit "Failed to install curl."
+        else
+            error_exit "No supported package manager found (dnf or apt-get). Please install curl manually."
+        fi
+        typing_print "curl installed successfully."
     fi
 
     # Check if docker is installed, if not, install it
@@ -77,6 +82,47 @@ install_docker() {
     else
         typing_print "Docker is already installed."
     fi
+}
+
+# Install Cockpit and enable it
+install_cockpit() {
+    echo -e "\e[36m"
+    typing_print "================================================"
+    typing_print "  Step 2: Installing Cockpit                    "
+    typing_print "================================================"
+    echo -e "\e[0m"
+
+    if systemctl list-unit-files cockpit.socket &> /dev/null; then
+        typing_print "Cockpit is already installed."
+    else
+        typing_print "Installing Cockpit..."
+        if command -v dnf &> /dev/null; then
+            sudo dnf install -y cockpit cockpit-files || error_exit "Failed to install Cockpit."
+        elif command -v apt-get &> /dev/null; then
+            sudo apt-get install -y cockpit || error_exit "Failed to install Cockpit."
+        else
+            error_exit "No supported package manager found (dnf or apt-get). Please install Cockpit manually."
+        fi
+        typing_print "Cockpit installed."
+    fi
+
+    # Enable and start cockpit socket
+    sudo systemctl enable --now cockpit.socket || error_exit "Failed to enable Cockpit."
+    typing_print "Cockpit enabled and running."
+
+    # Open firewall port (handle both firewalld and ufw)
+    if command -v firewall-cmd &> /dev/null; then
+        sudo firewall-cmd --add-service=cockpit --permanent 2>/dev/null
+        sudo firewall-cmd --reload
+        typing_print "Firewall rule added for Cockpit (firewalld)."
+    elif command -v ufw &> /dev/null; then
+        sudo ufw allow 9090/tcp
+        typing_print "Firewall rule added for Cockpit (ufw)."
+    else
+        typing_print "No firewall detected — skipping firewall rule. Cockpit port 9090 should be accessible."
+    fi
+
+    typing_print "Cockpit is available at http://$(hostname -I | awk '{print $1}'):9090"
 }
 
 # Verify Docker installation
@@ -90,19 +136,48 @@ verify_docker() {
 # Create .env file
 create_env_file() {
     typing_print "Creating .env file..."
-
+    rm -f "$ENV_FILE"
     touch "$ENV_FILE"
     typing_print ".env file created at $ENV_FILE"
 
     PUID=$(id -u)
     PGID=$(id -g)
-    
-    read -p "Enter TZ [America/New_York]: " TZ
-    read -p "Enter SERVER_IP: " SERVER_IP
-    read -p "Enter PLEX_CLAIM (leave empty if not available): " PLEX_CLAIM
+
+    # Load defaults if available
+    if [[ -f "./config.env" ]]; then
+        source ./config.env
+        typing_print "Loaded defaults from config.env"
+    fi
+
+    # Only prompt for values that are not already set
+    if [[ -z "$TZ" ]]; then
+        read -p "Enter TZ [America/New_York]: " TZ
+        TZ="${TZ:-America/New_York}"
+    else
+        typing_print "TZ=$TZ (from defaults.env)"
+    fi
+
+    if [[ -z "$SERVER_IP" ]]; then
+        read -p "Enter SERVER_IP: " SERVER_IP
+    else
+        typing_print "SERVER_IP=$SERVER_IP (from defaults.env)"
+    fi
+
+    if [[ -z "$PLEX_CLAIM" ]]; then
+        read -p "Enter PLEX_CLAIM (leave empty if not available): " PLEX_CLAIM
+    else
+        typing_print "PLEX_CLAIM set (from defaults.env)"
+    fi
+
+    else
+
+    if [[ -z "$DOMAINNAME_HS" ]]; then
+        read -p "Enter DOMAINNAME_HS (leave empty if not using a domain): " DOMAINNAME_HS
+    else
+        typing_print "DOMAINNAME_HS=$DOMAINNAME_HS (from defaults.env)"
+    fi
 
     [ -n "$PLEX_CLAIM" ] && echo "$PLEX_CLAIM" | sudo tee "$SECRETS/plex_claim" > /dev/null
-
     declare -A env_vars=(
         ["HOSTNAME"]="$HOSTNAME"
         ["USERDIR"]="$HOME"
@@ -114,6 +189,7 @@ create_env_file() {
         ["PUID"]="$PUID"
         ["PGID"]="$PGID"
         ["PLEX_CLAIM"]="$PLEX_CLAIM"
+        ["DOMAINNAME_HS"]="$DOMAINNAME_HS"
         ["LOCAL_IPS"]=127.0.0.1/32,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
         ["HOMEPAGE_VAR_PLEX_URL"]="http://$SERVER_IP:32400/web"
         ["HOMEPAGE_VAR_PORTAINER_URL"]="http://$SERVER_IP:9000"
@@ -158,7 +234,13 @@ set_permissions() {
     typing_print "Permissions set for secrets folder, .env file and config file."
 
     typing_print "Setting permissions for Docker root folder..."
-    sudo apt install -y acl || error_exit "Failed to install ACL."
+    if command -v dnf &> /dev/null; then
+        sudo dnf install -y acl || error_exit "Failed to install ACL."
+    elif command -v apt-get &> /dev/null; then
+        sudo apt-get install -y acl || error_exit "Failed to install ACL."
+    else
+        error_exit "No supported package manager found (dnf or apt-get). Please install acl manually."
+    fi
     sudo chmod 775 "$DOCKER_ROOT"
     sudo setfacl -Rdm u:"$USER":rwx "$DOCKER_ROOT"
     sudo setfacl -Rm u:"$USER":rwx "$DOCKER_ROOT"
@@ -167,6 +249,7 @@ set_permissions() {
     typing_print "Permissions set for Docker root folder: $DOCKER_ROOT"
 
     typing_print "Setting permissions for Jellyfin directory..."
+    mkdir -p "$DOCKER_ROOT/appdata/jellyfin"
     sudo chown -R "$USER":"$USER" "$DOCKER_ROOT/appdata/jellyfin"
     typing_print "Permissions set for Jellyfin directory: $DOCKER_ROOT/appdata/jellyfin"
 }
@@ -182,14 +265,17 @@ create_compose_files() {
         "portainer"
         "dozzle"
         "homepage"
+        "homarr"
         "plex"
         "jellyfin"
         "qbittorrent"
+        "decypharr"
         "sonarr"
         "radarr"
         "prowlarr"
         "bazarr"
         "docker-gc"
+        "watchtower"
     )
 
     typing_print "Creating compose files..."
@@ -203,7 +289,7 @@ create_compose_files() {
 # Start Docker containers
 start_containers() {
     typing_print "Starting the containers..."
-    sudo docker compose -f "$MASTER_COMPOSE" up -d || error_exit "Failed to start containers."
+    sudo docker compose -f "$MASTER_COMPOSE" up -d --remove-orphans || error_exit "Failed to start containers."
 }
 
 # Replace homepage configuration files
@@ -242,6 +328,24 @@ create_qbittorrent_config() {
     fi
 }
 
+# Replace qBittorrent configuration file
+create_deluge_config() {
+    typing_print "Creating Deluge configuration file..."
+    
+    # Copy the configuration file
+    if cp "$DELUGE_CONFIG1" "$DELUGE_CONF1"; then
+        typing_print "Created $DELUGE_CONF1."
+    else
+        echo "Failed to create deluge.conf."
+    fi
+    if cp "$DELUGE_CONFIG2" "$DELUGE_CONF2"; then
+        typing_print "Created $DELUGE_CONF1."
+    else
+        echo "Failed to create deluge.conf."
+    fi
+
+}
+
 # Add Docker aliases to bash configuration
 add_docker_aliases() { 
     typing_print "Adding Docker aliases..."
@@ -269,14 +373,29 @@ add_docker_aliases() {
 
     # Ensure .bashrc sources .bash_aliases
     if ! grep -q "source $BASH_CONFIG" "$BASHRC"; then
-        echo "source $BASH_CONFIG" >> "$BASHRC"
-        typing_print "Added 'source $BASH_CONFIG' to $BASHRC to load .bash_aliases."
+        echo "[[ -f $BASH_ENV ]] && source $BASH_ENV" >> "$BASHRC"
+        echo "[[ -f $BASH_CONFIG ]] && source $BASH_CONFIG" >> "$BASHRC"
+        typing_print "Added alias sources to $BASHRC."
     else
         typing_print "$BASHRC already sources $BASH_CONFIG."
     fi
 
-    # Source the .bashrc to apply changes immediately
-    source "$BASHRC"
+    # Source the .bashrc to apply changes on next login
+    typing_print "Docker aliases will be available in new shell sessions."
+}
+
+# Create Decypharr configuration file
+create_decypharr_config() {
+    typing_print "Creating Decypharr configuration file..."
+
+    mkdir -p "$APPDATA/decypharr"
+
+    if cp "$DECYPHARR_CONFIG" "$APPDATA/decypharr/config.json"; then
+        typing_print "Created $APPDATA/decypharr/config.json"
+        typing_print "Decypharr will complete setup via its web UI on first launch."
+    else
+        echo "Failed to create decypharr config."
+    fi
 }
 
 # Function to create docker-gc-exclude file
