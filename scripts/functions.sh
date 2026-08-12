@@ -82,6 +82,10 @@ install_docker() {
     else
         typing_print "Docker is already installed."
     fi
+
+    # Enable Docker to start on boot
+    sudo systemctl enable docker || error_exit "Failed to enable Docker on boot."
+    typing_print "Docker enabled to start on boot."
 }
 
 # Install Cockpit and enable it

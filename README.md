@@ -248,6 +248,61 @@ Backups run daily at 3am to `homeserver-backup/appdata/` in your Google Drive.
 
 ---
 
+## After a System Restart
+
+All containers have `restart: unless-stopped` and Docker is configured to start on boot (handled by the setup script). Everything should come back up automatically — no manual steps needed.
+
+To verify Docker is enabled:
+
+```bash
+sudo systemctl is-enabled docker
+```
+
+If for some reason it's disabled:
+
+```bash
+sudo systemctl enable docker
+```
+
+---
+
+## Making Changes
+
+If you update `scripts/config.env`, add/remove services in `docker-compose.yml`, or modify any config files in `configs/`, re-run the relevant parts manually:
+
+**Re-generate the `.env` and copy compose/config files:**
+```bash
+cd ~/home-server/scripts
+bash udms.sh
+```
+
+Or do it step by step:
+
+**Copy updated compose files only:**
+```bash
+cp ~/home-server/docker-compose.yml ~/docker/docker-compose.yml
+cp ~/home-server/compose/<service>.yml ~/docker/compose/<service>.yml
+```
+
+**Copy updated app configs (e.g. homepage):**
+```bash
+cp ~/home-server/configs/homepage/docker-configs/*.yaml ~/docker/appdata/homepage/
+```
+
+**Apply changes and bring containers up:**
+```bash
+dcup
+# or force recreate a specific container after a config change:
+dcrec <service>
+```
+
+**Pull latest images before bringing up:**
+```bash
+dcpull && dcup
+```
+
+---
+
 ## Adding More Services
 
 There are 75+ service compose files in the `compose/` directory. To enable one:
