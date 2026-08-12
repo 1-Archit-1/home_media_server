@@ -1,179 +1,292 @@
-# Home Server Automation
+# Home Media Server
 
-This repository automates the setup and management of my home server using Docker and Docker Compose.
+A self-hosted media server stack built on Docker, managed with Docker Compose. Includes automated media management, a debrid download client, dashboards, and automatic backups to Google Drive.
 
 <p align="center">
-  <img src="assets/docker-moby.png" alt="Docker" width="70" height="70">
-  <img src="assets/portainer-alt.png" alt="Portainer" width="70" height="70">
-  <img src="assets/homepage.png" alt="Homepage" width="70" height="70" style="border-radius: 100%;">
-  <img src="assets/plex.png" alt="Plex" width="70" height="70">
-  <img src="assets/jellyfin.png" alt="Jellyfin" width="70" height="70" >
-  <img src="assets/qbittorrent.png" alt="qBittorrent" width="70" height="70">
-  <img src="assets/sonarr.png" alt="Sonarr" width="70" height="70">
-  <img src="assets/radarr-light.png" alt="Radarr" width="70" height="70">
-  <img src="assets/prowlarr.png" alt="Prowlarr" width="70" height="70">
-  <img src="assets/bazarr.png" alt="Bazarr" width="70" height="70">
-  <img src="assets/komga.png" alt="Komga" width="70" height="70">
-  <img src="assets/kavita.png" alt="Kavita" width="70" height="70">
-  <img src="assets/gitea.png" alt="Gitea" width="70" height="70">
-  <img src="assets/mariadb.png" alt="MariaDB" width="70" height="70">
-  <img src="assets/tachidesk.png" alt="TachiDesk" width="70" height="70">
-  <img src="assets/trash-guides.png" alt="Trash-Guides" width="70" height="70">
+  <img src="assets/docker-moby.png" alt="Docker" width="60" height="60">
+  <img src="assets/portainer-alt.png" alt="Portainer" width="60" height="60">
+  <img src="assets/homepage.png" alt="Homepage" width="60" height="60">
+  <img src="assets/jellyfin.png" alt="Jellyfin" width="60" height="60">
+  <img src="assets/qbittorrent.png" alt="qBittorrent" width="60" height="60">
+  <img src="assets/sonarr.png" alt="Sonarr" width="60" height="60">
+  <img src="assets/radarr-light.png" alt="Radarr" width="60" height="60">
+  <img src="assets/prowlarr.png" alt="Prowlarr" width="60" height="60">
+  <img src="assets/bazarr.png" alt="Bazarr" width="60" height="60">
 </p>
+
+---
+
+## Stack Overview
+
+| Service | Purpose | Port |
+|---|---|---|
+| Socket Proxy | Secure Docker socket access for other containers | internal |
+| Portainer | Docker container management UI | 9000 |
+| Dozzle | Real-time container log viewer | 8082 |
+| Homepage | Main dashboard | 3000 |
+| Homarr | Visual dashboard with live service widgets | 7575 |
+| Jellyfin | Media server | 8096 |
+| qBittorrent | Torrent download client | 8081 |
+| Decypharr | TorBox debrid download client (mock qBittorrent API) | 8282 |
+| Sonarr | TV show automation | 8989 |
+| Radarr | Movie automation | 7878 |
+| Prowlarr | Indexer manager for Sonarr/Radarr | 9696 |
+| Bazarr | Subtitle downloader | 6767 |
+| Watchtower | Automatic container image updates | — |
+| Docker GC | Nightly cleanup of unused images | — |
+| Rclone Backup | Daily appdata backup to Google Drive | — |
+
+All media lives at `$DATADIR` (default: `/media/storage`). All app configs live at `~/docker/appdata/`.
+
+---
 
 ## Prerequisites
 
-- **Operating System**: Ubuntu/Debian Linux
-- **Git**: Required to clone the repository. Install Git with:
+- Fedora/RHEL or Debian/Ubuntu Linux
+- Git
 
-  ```bash
-  sudo apt install git
-  ```
+```bash
+# Fedora
+sudo dnf install git
 
-## Quick Setup
+# Ubuntu/Debian
+sudo apt install git
+```
 
-To quickly set up the script, use the following commands:
+---
 
-1. **Clone the repository**:
+## Setup
 
-   ```bash
-   git clone https://github.com/HASANALI117/home-server.git
-   ```
+### 1. Clone the repository
 
-2. **Navigate to the `scripts` directory**:
+```bash
+git clone https://github.com/1-Archit-1/home_media_server.git ~/home-server
+cd ~/home-server
+```
 
-   ```bash
-   cd home-server/scripts
-   ```
+### 2. Set a static IP (recommended)
 
-3. **Make the script executable and run it**:
+Prevents your server IP from changing on reboot. Find your connection name and gateway first:
 
-   ```bash
-   chmod +x udms.sh
-   ./udms.sh
-   ```
+```bash
+nmcli connection show
+ip route show default
+```
 
-Follow the prompts to provide configuration details. Examples of the prompts are:
+Then set a static IP:
 
-1. **Enter Time Zone (TZ):**
+```bash
+nmcli connection modify "YOUR_CONNECTION_NAME" \
+  ipv4.method manual \
+  ipv4.addresses 192.168.1.200/24 \
+  ipv4.gateway 192.168.1.1 \
+  ipv4.dns "1.1.1.1,8.8.8.8"
 
-   ```plaintext
-   Enter TZ: Europe/London
-   ```
+nmcli connection up "YOUR_CONNECTION_NAME"
+```
 
-   This prompt asks for your server's time zone. You should enter the appropriate time zone for your location. For a list of time zones, refer to the [Wikipedia Time Zone List](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+### 3. Configure your settings
 
-2. **Enter Server IP (SERVER_IP):**
+Edit `scripts/config.env` and fill in the top section:
 
-   ```plaintext
-   Enter SERVER_IP: 192.168.1.100
-   ```
+```bash
+nano ~/home-server/scripts/config.env
+```
 
-   This prompt asks for the IP address of your server. Enter the local IP address where you want to access your services.
+```bash
+TZ=America/New_York       # your timezone
+SERVER_IP=192.168.1.200   # your static IP from step 2
+PLEX_CLAIM=               # optional, leave blank
+DOMAINNAME_HS=            # optional, leave blank unless using Traefik
+```
 
-3. **Enter Plex Claim (PLEX_CLAIM):**
+Also set your data directory if your media drive is not at `/media/storage`:
 
-   ```plaintext
-   Enter PLEX_CLAIM: YOUR_PLEX_CLAIM_TOKEN
-   ```
+```bash
+DATADIR="/media/storage"  # where media and downloads are stored
+```
 
-   This prompt asks for a Plex claim token. If you’re using Plex, you’ll need to enter your Plex claim token to connect your server to your Plex account. You can keep it empty initially, and add the Plex claim token to the `plex_claim` file in the `SECRETS` directory when you have it. If you don't know what your Plex claim is, you can find it at [Plex Claim](https://plex.tv/claim).
+### 4. Run the setup script
 
-These prompts will help configure essential aspects of your home server setup. Make sure to provide accurate details to ensure that the script configures your environment correctly.
+```bash
+cd ~/home-server/scripts
+bash udms.sh
+```
 
-## What the Script Does
+The script will:
+- Install Docker and Docker Compose if not present
+- Install Cockpit system management UI
+- Create all required directories under `~/docker/`
+- Generate `~/docker/.env` from your config
+- Copy compose files and seed app configs
+- Start all containers
 
-The `udms.sh` script performs the following tasks:
+### 5. Access your services
 
-1. **Installs Docker and Docker Compose**: Ensures Docker and Docker Compose are installed on your system.
+Once the script completes, all services are available at `http://YOUR_SERVER_IP:PORT`:
 
-2. **Verifies Installation**: Checks that Docker and Docker Compose are installed correctly.
+| Service | URL |
+|---|---|
+| Homepage | http://SERVER_IP:3000 |
+| Homarr | http://SERVER_IP:7575 |
+| Portainer | http://SERVER_IP:9000 |
+| Dozzle | http://SERVER_IP:8082 |
+| Jellyfin | http://SERVER_IP:8096 |
+| qBittorrent | http://SERVER_IP:8081 |
+| Decypharr | http://SERVER_IP:8282 |
+| Sonarr | http://SERVER_IP:8989 |
+| Radarr | http://SERVER_IP:7878 |
+| Prowlarr | http://SERVER_IP:9696 |
+| Bazarr | http://SERVER_IP:6767 |
+| Cockpit | http://SERVER_IP:9090 |
 
-3. **Sets Up Directories**: Creates the following directories:
+---
 
-   - **`APPDATA`**: Stores application-specific data for Docker services.
-   - **`COMPOSE`**: Contains Docker Compose files for different services.
-   - **`LOGS`**: Holds log files for Docker services.
-   - **`SCRIPTS`**: Stores additional scripts related to Docker and server management.
-   - **`SECRETS`**: Keeps sensitive data like Plex claim tokens and other secrets.
-   - **`SHARED`**: Directory for shared resources between containers.
+## Arr Stack Configuration
 
-4. **Configures Permissions**: Sets appropriate permissions for directories and files to ensure secure access.
+After the containers are running, configure the services through their web UIs in this order.
 
-5. **Downloads Docker Compose Files**: Retrieves Docker Compose files for various services from remote sources.
+### 1. Prowlarr — Add indexers
 
-6. **Starts Docker Containers**: Launches Docker containers based on the provided configuration.
+1. Go to `http://SERVER_IP:9696`
+2. **Indexers → Add Indexer** — search and add your preferred indexers (e.g. 1337x, RARBG, etc.)
+3. **Settings → Apps → Add Application**:
+   - Add Radarr: host `radarr`, port `7878`, API key from Radarr Settings → General
+   - Add Sonarr: host `sonarr`, port `8989`, API key from Sonarr Settings → General
 
-7. **Service Configuration**: Applies specific configurations to services like qbittorrent and homepage.
+### 2. Decypharr — TorBox Setup
 
-8. **Adds Docker Aliases**: Adds useful Docker and bash aliases to your bash configuration for easier management of Docker services and other tasks. For a full list of aliases and usage examples, refer to the [Bash Aliases & Shortcuts](./BASH-ALIASES.md) section.
+1. Go to `http://SERVER_IP:8282` and complete the setup wizard
+2. **Add your debrid provider** — select TorBox and enter your API key from [torbox.app](https://torbox.app) → Settings → API
+3. **Downloads folder**: `/data/downloads`
+4. **Download action** — choose one:
+   - **Download (recommended)** — files are fully downloaded to your server. Uses disk space but files are permanent regardless of TorBox retention.
+   - **Symlink** — files are not downloaded locally, they point to TorBox's servers via an rclone mount. Zero disk space used but requires rclone mount configuration (see note below), and files expire after TorBox's 30-day retention period.
+5. **Mount path** (symlink mode only): `/data/torbox` — where rclone mounts your TorBox library inside the container.
+6. **Add Arr services** — in Decypharr settings, connect Sonarr and Radarr so it notifies them immediately when a download completes:
+   - Sonarr: `http://sonarr:8989`, API key from Sonarr → Settings → General
+   - Radarr: `http://radarr:7878`, API key from Radarr → Settings → General
 
-## Services Managed by the Script
+> **Symlink + rclone:** Symlink mode requires the rclone mount to be active inside Decypharr so it can access your TorBox cloud library at `/data/torbox`. Without it, symlinks will be broken pointers. If you just want things to work simply, use Download mode.
 
-The script sets up Docker Compose files for the following services:
+### 3. Download clients — qBittorrent or Decypharr (or both)
 
-- **`socket-proxy`**: A reverse proxy for managing access to multiple services running on the server. [Documentation](https://github.com/Tecnativa/docker-socket-proxy?tab=readme-ov-file#supported-api-versions)
+You can use either or both download clients simultaneously. Decypharr routes downloads through TorBox debrid, qBittorrent downloads normally via torrents.
 
-- **`portainer`**: A lightweight management UI that allows you to easily manage Docker environments. [Documentation](https://docs.portainer.io/)
+**In Radarr and Sonarr — Settings → Download Clients → Add → qBittorrent:**
 
-- **`dozzle`**: A real-time log viewer for Docker containers, providing a web interface to view logs. [Documentation](https://dozzle.dev/guide/getting-started)
+| Field | qBittorrent | Decypharr |
+|---|---|---|
+| Name | qBittorrent | Decypharr |
+| Host | `qbittorrent` | `decypharr` |
+| Port | `8080` | `8282` |
+| Category | `radarr` / `sonarr` | `radarr` / `sonarr` |
 
-- **`homepage`**: A customizable homepage service that provides quick access to various other services. [Documentation](https://gethomepage.dev/latest/installation/docker/)
+To use Decypharr by default, set it to higher priority (drag it above qBittorrent in the list). Disable either client at any time to switch between them.
 
-- **`plex`**: A media server that organizes and streams your personal media collection. [Documentation](https://docs.linuxserver.io/images/docker-plex/)
+### 3. Radarr — Movies
 
-- **`jellyfin`**: An open-source media server software for managing and streaming your media library. [Documentation](https://docs.linuxserver.io/images/docker-jellyfin/)
+1. Go to `http://SERVER_IP:7878`
+2. **Settings → Media Management → Add Root Folder**: `/data/media/movies`
+3. **Settings → Download Clients** — add download client(s) as above
+4. Prowlarr sync adds indexers automatically if configured in step 1
 
-- **`qbittorrent`**: A popular torrent client with a built-in web interface for managing torrents. [Documentation](https://docs.linuxserver.io/images/docker-qbittorrent/)
+### 4. Sonarr — TV Shows
 
-- **`sonarr`**: A TV series manager that automatically downloads and organizes TV shows. [Documentation](https://docs.linuxserver.io/images/docker-sonarr/)
+1. Go to `http://SERVER_IP:8989`
+2. **Settings → Media Management → Add Root Folder**: `/data/media/tvshows`
+3. **Settings → Download Clients** — add download client(s) as above
 
-- **`radarr`**: A movie collection manager that automates the process of downloading and organizing movies. [Documentation](https://docs.linuxserver.io/images/docker-radarr/)
+### 5. Bazarr — Subtitles
 
-- **`prowlarr`**: A Usenet and torrent indexer that integrates with various other services for managing downloads. [Documentation](https://docs.linuxserver.io/images/docker-prowlarr/)
+1. Go to `http://SERVER_IP:6767`
+2. **Settings → Sonarr**: host `sonarr`, port `8989`, API key from Sonarr
+3. **Settings → Radarr**: host `radarr`, port `7878`, API key from Radarr
+4. **Settings → Providers** — add subtitle providers (OpenSubtitles, Subscene etc.)
 
-- **`bazarr`**: A companion application to Sonarr and Radarr, providing subtitle management for your media library. [Documentation](https://docs.linuxserver.io/images/docker-bazarr/)
+### 6. Jellyfin — Media Server
 
-- **`docker-gc`**: A garbage collection tool that automatically cleans up unused Docker containers and images to free up disk space. [Documentation](https://github.com/clockworksoul/docker-gc-cron)
+1. Go to `http://SERVER_IP:8096` and complete the initial setup wizard
+2. **Add Media Library → Movies**: `/data/media/movies`
+3. **Add Media Library → TV Shows**: `/data/media/tvshows`
+
+---
+
+## Google Drive Backup
+
+App configs are automatically backed up daily to Google Drive via the `rclone-backup` container.
+
+### First time setup
+
+Install rclone on the host and authenticate:
+
+```bash
+sudo dnf install rclone   # Fedora
+# or
+sudo apt install rclone   # Ubuntu/Debian
+
+rclone config
+```
+
+- Choose `n` for new remote
+- Name it `gdrive`
+- Select `drive` (Google Drive)
+- Leave client ID and secret blank (hit enter)
+- Select scope `1` (full access)
+- Use auto config: `y` (opens browser for OAuth)
+- Shared drive: `n`
+
+Copy the config to the container's config directory:
+
+```bash
+mkdir -p ~/docker/appdata/rclone
+cp ~/.config/rclone/rclone.conf ~/docker/appdata/rclone/rclone.conf
+sudo docker restart rclone-backup
+```
+
+Backups run daily at 3am to `homeserver-backup/appdata/` in your Google Drive.
+
+---
 
 ## Adding More Services
 
-There are 75+ apps in the `compose/` directory. For more information on these apps, refer to the [README in the compose directory](./compose/README.md). The script is a work in progress for adding all of them, for now to add more services, follow these steps:
+There are 75+ service compose files in the `compose/` directory. To enable one:
 
-1. **Add Service Configuration**: Copy the desired service's Docker Compose YAML file from the [`compose/`](./compose/) directory.
-2. **Update [`master-compose.yml`](./master-compose.yml)**: Add the path to the copied service YAML file in the [`master-compose.yml`](./master-compose.yml) file under the appropriate section.
+1. Add it to `master-compose.yml` under the relevant section:
 
-Example of adding a new service in [`master-compose.yml`](./master-compose.yml):
-
-```yml
+```yaml
 include:
-  ########################### SERVICES
-  # PREFIX udms = Ultimate Docker Media Server
-  # HOSTNAME=udms - defined in .env
-  # CORE
-  - compose/socket-proxy.yml
-  - compose/portainer.yml
-  - compose/dozzle.yml
-  - compose/homepage.yml
-  # MEDIA
-  - compose/plex.yml
-  - compose/jellyfin.yml
-  # DOWNLOADERS
-  - compose/qbittorrent.yml
-  # PVRS
-  - compose/radarr.yml
-  - compose/sonarr.yml
-  - compose/prowlarr.yml
-  # COMPLEMENTARY AP
-
-PS
-  - compose/bazarr.yml
-  # MAINTENANCE
-  - compose/docker-gc.yml
-  # Add your new service here
-  - compose/new-service.yml
+  # UTILITIES
+  - compose/filebrowser.yml
 ```
+
+2. Bring it up:
+
+```bash
+sudo docker compose -f ~/docker/master-compose.yml up -d
+```
+
+---
+
+## Useful Aliases
+
+After setup, these aliases are available in your shell:
+
+```bash
+dcup          # bring up all containers
+dcdown        # bring down all containers
+dcrec         # force recreate a container: dcrec sonarr
+dcrestart     # restart a container: dcrestart jellyfin
+dclogs        # tail logs: dclogs radarr
+dpss          # show all containers with status
+dexec         # exec into container: dexec sonarr bash
+dcpull        # pull latest images
+dp600         # lock secrets permissions
+dp777         # unlock secrets for editing
+```
+
+---
 
 ## Credits
 
-Special thanks to [@anandslab](https://github.com/anandslab) for his amazing guides and resources. The Docker Compose files were taken from his repository [docker-traefik](https://github.com/anandslab/docker-traefik). For more information, check out his guide on setting up a Docker media server [here](https://www.smarthomebeginner.com/docker-media-server-2024/).
+Original compose files based on [@anandslab](https://github.com/anandslab)'s [docker-traefik](https://github.com/anandslab/docker-traefik) project.
