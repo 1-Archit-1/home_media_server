@@ -1,0 +1,52 @@
+services:
+  # Rclone Backup - Syncs appdata to Google Drive on a schedule
+  # First time setup:
+  #   1. Run: sudo docker exec -it rclone-backup rclone config
+  #   2. Follow prompts to add a remote named "gdrive" (Google Drive)
+  #   3. Config is saved to $DOCKERDIR/appdata/rclone/rclone.conf
+  #   4. Restart container - it will sync daily at 3am automatically
+  rclone-backup:
+    image: rclone/rclone:latest
+    container_name: rclone-backup
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - default
+    entrypoint: /bin/sh
+    command: >
+      -c "echo 'Rclone backup container started.' &&
+      if ! rclone listremotes | grep -q '^gdrive:'; then
+        echo 'WARNING: gdrive remote not configured.' &&
+        echo 'Run: sudo docker exec -it rclone-backup rclone config' &&
+        echo 'Sleeping until configured...' &&
+        while ! rclone listremotes | grep -q '^gdrive:'; do
+          sleep 60;
+        done;
+      fi &&
+      echo 'gdrive remote found. Running initial sync...' &&
+      rclone sync /data/appdata gdrive:homeserver-backup/appdata
+      --log-level INFO
+      --exclude '*.log'
+      --exclude '*.pid'
+      --exclude 'cache/**'
+      --exclude 'logs/**' &&
+      echo 'Initial sync complete. Scheduling daily backups at 3am...' &&
+      while true; do
+        sleep $$(( \( 3 * 3600 \) - \( \$(date +%H) * 3600 + \$(date +%M) * 60 + \$(date +%S) \) + 86400 \) % 86400 ));
+        echo 'Starting scheduled backup...' &&
+        rclone sync /data/appdata gdrive:homeserver-backup/appdata
+        --log-level INFO
+        --exclude '*.log'
+        --exclude '*.pid'
+        --exclude 'cache/**'
+        --exclude 'logs/**' &&
+        echo 'Backup complete.';
+      done"
+    volumes:
+      - $DOCKERDIR/appdata/rclone:/config/rclone  # rclone.conf lives here
+      - $DOCKERDIR/appdata:/data/appdata:ro        # what we're backing up (read-only)
+    environment:
+      TZ: $TZ
+      PUID: $PUID
+      PGID: $PGID

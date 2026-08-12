@@ -276,6 +276,7 @@ create_compose_files() {
         "bazarr"
         "docker-gc"
         "watchtower"
+        "rclone-backup"
     )
 
     typing_print "Creating compose files..."
