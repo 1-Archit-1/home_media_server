@@ -29,6 +29,7 @@ include:
   - compose/homarr.yml
   # MEDIA
   - compose/jellyfin.yml
+  - compose/torbox-media-center.yml
   # DOWNLOADERS
   # - compose/sabnzbd.yml
   # - compose/deluge.yml

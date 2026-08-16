@@ -281,6 +281,7 @@ create_compose_files() {
         "jellyfin"
         "qbittorrent"
         "decypharr"
+        "torbox-media-center"
         "sonarr"
         "radarr"
         "prowlarr"

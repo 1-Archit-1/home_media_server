@@ -1,0 +1,18 @@
+services:
+  # TorBox Media Center - Mounts TorBox cloud media as .strm files for Jellyfin
+  # Organizes into movies/ and series/ using TorBox Metadata API
+  # Requires paid TorBox account: https://torbox.app/subscription
+  torbox-media-center:
+    container_name: torbox-media-center
+    image: anonymoussystems/torbox-media-center:latest
+    restart: always
+    stdin_open: true
+    tty: true
+    networks:
+      - default
+    volumes:
+      - $DATADIR/torbox-mm:/torbox
+    environment:
+      - TORBOX_API_KEY=${TORBOX_API_KEY}
+      - MOUNT_METHOD=strm
+      - MOUNT_PATH=/torbox
