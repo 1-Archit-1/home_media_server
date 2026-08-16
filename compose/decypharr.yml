@@ -7,8 +7,9 @@ services:
     image: cy01/blackhole:latest
     container_name: decypharr
     security_opt:
-      - no-new-privileges:true
       - apparmor:unconfined
+      - label=disable
+    privileged: true
     restart: unless-stopped
     networks:
       - default
@@ -18,6 +19,7 @@ services:
     volumes:
       - $DOCKERDIR/appdata/decypharr:/app
       - $DATADIR/downloads:/data/downloads:rshared
+      - $DATADIR/media:/data/media:rshared
     devices:
       - /dev/fuse:/dev/fuse:rwm                    # required for FUSE/rclone mount feature
     cap_add:

@@ -52,4 +52,4 @@ include:
   - compose/docker-gc.yml
   - compose/watchtower.yml
   - compose/rclone-backup.yml
-  - compose/homarr.yml 
+  - compose/torbox-media-center.yml

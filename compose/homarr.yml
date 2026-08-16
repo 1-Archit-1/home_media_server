@@ -5,14 +5,3 @@ services:
     container_name: homarr
     security_opt:
       - no-new-privileges:true
-    restart: unless-stopped
-    networks:
-      - default
-    ports:
-      - "7575:7575"
-    volumes:
-      - $DOCKERDIR/appdata/homarr/configs:/app/data/configs
-      - $DOCKERDIR/appdata/homarr/icons:/app/public/icons
-      - $DOCKERDIR/appdata/homarr/data:/data
-    environment:
-      TZ: $TZ

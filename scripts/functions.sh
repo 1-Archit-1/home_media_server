@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Source configuration file
-source ./config.env
+source ../.env.example
 
 # Function to create typing effect
 typing_print() {
@@ -139,86 +139,81 @@ verify_docker() {
 
 # Create .env file
 create_env_file() {
-    typing_print "Creating .env file..."
-    rm -f "$ENV_FILE"
-    touch "$ENV_FILE"
-    typing_print ".env file created at $ENV_FILE"
+    typing_print "Creating .env file from .env.example..."
 
     PUID=$(id -u)
     PGID=$(id -g)
 
-    # Load defaults if available
-    if [[ -f "./config.env" ]]; then
-        source ./config.env
-        typing_print "Loaded defaults from config.env"
+    # Load defaults from .env.example
+    if [[ -f "../.env.example" ]]; then
+        source ../.env.example
+        typing_print "Loaded defaults from .env.example"
     fi
 
-    # Only prompt for values that are not already set
+    # Prompt for values not already set
     if [[ -z "$TZ" ]]; then
         read -p "Enter TZ [America/New_York]: " TZ
         TZ="${TZ:-America/New_York}"
     else
-        typing_print "TZ=$TZ (from defaults.env)"
+        typing_print "TZ=$TZ (from .env.example)"
     fi
 
     if [[ -z "$SERVER_IP" ]]; then
         read -p "Enter SERVER_IP: " SERVER_IP
     else
-        typing_print "SERVER_IP=$SERVER_IP (from defaults.env)"
+        typing_print "SERVER_IP=$SERVER_IP (from .env.example)"
     fi
 
-    if [[ -z "$PLEX_CLAIM" ]]; then
-        read -p "Enter PLEX_CLAIM (leave empty if not available): " PLEX_CLAIM
+    if [[ -z "$DATADIR" ]]; then
+        read -p "Enter DATADIR [/media/storage]: " DATADIR
+        DATADIR="${DATADIR:-/media/storage}"
     else
-        typing_print "PLEX_CLAIM set (from defaults.env)"
+        typing_print "DATADIR=$DATADIR (from .env.example)"
     fi
 
-    else
-
-    if [[ -z "$DOMAINNAME_HS" ]]; then
-        read -p "Enter DOMAINNAME_HS (leave empty if not using a domain): " DOMAINNAME_HS
-    else
-        typing_print "DOMAINNAME_HS=$DOMAINNAME_HS (from defaults.env)"
-    fi
+    read -p "Enter PLEX_CLAIM (leave empty if not available): " PLEX_CLAIM
+    read -p "Enter DOMAINNAME_HS (leave empty if not using a domain): " DOMAINNAME_HS
+    read -p "Enter TORBOX_API_KEY (leave empty to set later): " TORBOX_API_KEY
 
     [ -n "$PLEX_CLAIM" ] && echo "$PLEX_CLAIM" | sudo tee "$SECRETS/plex_claim" > /dev/null
-    declare -A env_vars=(
-        ["HOSTNAME"]="$HOSTNAME"
-        ["USERDIR"]="$HOME"
-        ["DOCKERDIR"]="$DOCKER_ROOT"
-        ["SECRETSDIR"]="$SECRETS"
-        ["SERVER_IP"]="$SERVER_IP"
-        ["DATADIR"]="$DATADIR"
-        ["TZ"]="$TZ"
-        ["PUID"]="$PUID"
-        ["PGID"]="$PGID"
-        ["PLEX_CLAIM"]="$PLEX_CLAIM"
-        ["DOMAINNAME_HS"]="$DOMAINNAME_HS"
-        ["LOCAL_IPS"]=127.0.0.1/32,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
-        ["HOMEPAGE_VAR_PLEX_URL"]="http://$SERVER_IP:32400/web"
-        ["HOMEPAGE_VAR_PORTAINER_URL"]="http://$SERVER_IP:9000"
-        ["HOMEPAGE_VAR_DOZZLE_URL"]="http://$SERVER_IP:8082"
-        ["HOMEPAGE_VAR_JELLYFIN_URL"]="http://$SERVER_IP:8096"
-        ["HOMEPAGE_VAR_QBITTORRENT_URL"]="http://$SERVER_IP:8081"
-        ["HOMEPAGE_VAR_SONARR_URL"]="http://$SERVER_IP:8989"
-        ["HOMEPAGE_VAR_RADARR_URL"]="http://$SERVER_IP:7878"
-        ["HOMEPAGE_VAR_PROWLARR_URL"]="http://$SERVER_IP:9696"
-        ["HOMEPAGE_VAR_BAZARR_URL"]="http://$SERVER_IP:6767"
-        ["HOMEPAGE_VAR_HOMARR_URL"]="http://$SERVER_IP:7575"
-        ["HOMEPAGE_VAR_DECYPHARR_URL"]="http://$SERVER_IP:8282"
-        ["HOMEPAGE_VAR_JELLYFIN_API_KEY"]=""
-        ["HOMEPAGE_VAR_SONARR_API_KEY"]=""
-        ["HOMEPAGE_VAR_RADARR_API_KEY"]=""
-        ["HOMEPAGE_VAR_PROWLARR_API_KEY"]=""
-        ["HOMEPAGE_VAR_QBITTORRENT_PASSWORD"]=""
-    )
 
-    for key in "${!env_vars[@]}"; do
-        echo "$key=${env_vars[$key]}" >> "$ENV_FILE"
-    done
+    # Copy .env.example as base and append dynamic values
+    cp "../.env.example" "$ENV_FILE"
 
-    echo
-    typing_print ".env file has been populated with the necessary environment variables."
+    cat >> "$ENV_FILE" << EOF
+
+##### DYNAMIC — set by udms.sh at setup time
+HOSTNAME=$HOSTNAME
+USERDIR=$HOME
+DOCKERDIR=$DOCKER_ROOT
+SECRETSDIR=$SECRETS
+PUID=$PUID
+PGID=$PGID
+TZ=$TZ
+SERVER_IP=$SERVER_IP
+DATADIR=$DATADIR
+PLEX_CLAIM=$PLEX_CLAIM
+DOMAINNAME_HS=$DOMAINNAME_HS
+TORBOX_API_KEY=$TORBOX_API_KEY
+LOCAL_IPS=127.0.0.1/32,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+HOMEPAGE_VAR_PORTAINER_URL=http://$SERVER_IP:9000
+HOMEPAGE_VAR_DOZZLE_URL=http://$SERVER_IP:8082
+HOMEPAGE_VAR_JELLYFIN_URL=http://$SERVER_IP:8096
+HOMEPAGE_VAR_QBITTORRENT_URL=http://$SERVER_IP:8081
+HOMEPAGE_VAR_SONARR_URL=http://$SERVER_IP:8989
+HOMEPAGE_VAR_RADARR_URL=http://$SERVER_IP:7878
+HOMEPAGE_VAR_PROWLARR_URL=http://$SERVER_IP:9696
+HOMEPAGE_VAR_BAZARR_URL=http://$SERVER_IP:6767
+HOMEPAGE_VAR_HOMARR_URL=http://$SERVER_IP:7575
+HOMEPAGE_VAR_DECYPHARR_URL=http://$SERVER_IP:8282
+HOMEPAGE_VAR_JELLYFIN_API_KEY=
+HOMEPAGE_VAR_SONARR_API_KEY=
+HOMEPAGE_VAR_RADARR_API_KEY=
+HOMEPAGE_VAR_PROWLARR_API_KEY=
+HOMEPAGE_VAR_QBITTORRENT_PASSWORD=
+EOF
+
+    typing_print ".env file created at $ENV_FILE"
 }
 
 # Create necessary directories
@@ -371,9 +366,6 @@ add_docker_aliases() {
     else
         error_exit "bash_aliases.env.example file not found in the current directory."
     fi
-
-    # Add variables to bash_aliases.env file
-    cat "./config.env" >> "$BASH_ENV"
 
     # Check if bash_aliases file exists in the same directory as the script
     if [[ -f "./bash_aliases" ]]; then

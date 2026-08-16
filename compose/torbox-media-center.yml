@@ -11,7 +11,7 @@ services:
     networks:
       - default
     volumes:
-      - $DATADIR/torbox-mm:/torbox
+      - $DATADIR/media/torbox-strm:/torbox
     environment:
       - TORBOX_API_KEY=${TORBOX_API_KEY}
       - MOUNT_METHOD=strm
