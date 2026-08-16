@@ -16,3 +16,4 @@ services:
       - TORBOX_API_KEY=${TORBOX_API_KEY}
       - MOUNT_METHOD=strm
       - MOUNT_PATH=/torbox
+      - SCAN_METADATA=true

@@ -88,9 +88,7 @@ nmcli connection up "YOUR_CONNECTION_NAME"
 
 ### 3. Configure your settings
 
-There are two config files to be aware of:
-
-- **`scripts/config.env`** — shell script config, committed to the repo. Set your non-secret values here before running the setup script:
+Edit `scripts/config.env` and update the top section with your values:
 
 ```bash
 nano ~/home-server/scripts/config.env
@@ -102,9 +100,11 @@ SERVER_IP=192.168.1.200   # your static IP from step 2
 DATADIR=/media/storage    # where media and downloads are stored
 ```
 
-- **`.env.example`** — documents all Docker environment variables. Used by the setup script as the base template for generating `~/docker/.env`. You don't need to edit this unless adding new variables to document.
+These values are pre-filled with sensible defaults. The setup script will use them as-is and skip prompting for anything already set.
 
-The setup script will prompt you for secrets (TorBox API key, Plex claim token etc.) at runtime — those go into `~/docker/.env` and are never stored in the repo.
+Secrets (TorBox API key, Plex claim token etc.) are intentionally left blank — the script will prompt you for those at runtime and write them directly to `~/docker/.env`, never to the repo.
+
+> `.env.example` is reference documentation only — it lists all available Docker variables. You do not need to edit it during setup.
 
 ### 4. Run the setup script
 
