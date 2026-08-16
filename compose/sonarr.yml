@@ -13,8 +13,7 @@ services:
       - "8989:8989"
     volumes:
       - $DOCKERDIR/appdata/sonarr:/config
-      - $DATADIR/media/tvshows:/data/media/tvshows
-      - $DATADIR/downloads:/data/downloads
+      - $DATADIR:/data
       - "/etc/localtime:/etc/localtime:ro"
     environment:
       TZ: $TZ

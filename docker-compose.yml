@@ -30,6 +30,7 @@ include:
   # MEDIA
   - compose/jellyfin.yml
   - compose/torbox-media-center.yml
+  - compose/strmbridge.yml
   # DOWNLOADERS
   # - compose/sabnzbd.yml
   # - compose/deluge.yml
@@ -52,4 +53,3 @@ include:
   - compose/docker-gc.yml
   - compose/watchtower.yml
   - compose/rclone-backup.yml
-  - compose/torbox-media-center.yml

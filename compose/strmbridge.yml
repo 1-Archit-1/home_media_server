@@ -1,0 +1,24 @@
+services:
+  # StrmBridge - TorBox cloud library → .strm files for Jellyfin
+  # Polls TorBox API and organizes into Movies/ and TV Shows/ with proper naming
+  # Jellyfin libraries should point to:
+  #   Movies:   /data/media/torbox-strm/Movies
+  #   TV Shows: /data/media/torbox-strm/TV Shows
+  # Web UI / API: http://SERVER_IP:9847
+  # Trigger manual sync: POST http://SERVER_IP:9847/api/sync
+  strmbridge:
+    image: anthonymccann90/strmbridge:latest
+    container_name: strmbridge
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "9847:9847"
+    volumes:
+      - $DATADIR/media/strmbridge:/app/media
+    environment:
+      TZ: $TZ
+      App__ServiceBaseUrl: http://${SERVER_IP}:9847
+      App__SyncIntervalSeconds: 300
+      Providers__Torbox__ApiKey: ${TORBOX_API_KEY}
+      Providers__Torbox__IsEnabled: "true"

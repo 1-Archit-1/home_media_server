@@ -1,10 +1,13 @@
 services:
   # TorBox Media Center - Mounts TorBox cloud media as .strm files for Jellyfin
-  # Organizes into movies/ and series/ using TorBox Metadata API
+  # Organizes into movies/ and series/ using filename-based metadata parsing (PTN)
   # Requires paid TorBox account: https://torbox.app/subscription
   torbox-media-center:
     container_name: torbox-media-center
-    image: anonymoussystems/torbox-media-center:latest
+    # image: anonymoussystems/torbox-media-center:latest
+    build:
+      context: https://github.com/DanCorley/torbox-media-center.git#remove-metadata-search-api
+      dockerfile: dockerfile
     restart: always
     stdin_open: true
     tty: true
@@ -16,4 +19,5 @@ services:
       - TORBOX_API_KEY=${TORBOX_API_KEY}
       - MOUNT_METHOD=strm
       - MOUNT_PATH=/torbox
-      - SCAN_METADATA=true
+      - ENABLE_METADATA=true
+      - MOUNT_REFRESH_TIME=fast
