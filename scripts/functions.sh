@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Source configuration file
-source ../.env.example
+source ./config.env
 
 # Function to create typing effect
 typing_print() {
@@ -139,15 +139,15 @@ verify_docker() {
 
 # Create .env file
 create_env_file() {
-    typing_print "Creating .env file from .env.example..."
+    typing_print "Creating .env file..."
 
     PUID=$(id -u)
     PGID=$(id -g)
 
-    # Load defaults from .env.example
-    if [[ -f "../.env.example" ]]; then
-        source ../.env.example
-        typing_print "Loaded defaults from .env.example"
+    # Load defaults from config.env
+    if [[ -f "./config.env" ]]; then
+        source ./config.env
+        typing_print "Loaded defaults from config.env"
     fi
 
     # Prompt for values not already set
@@ -155,20 +155,20 @@ create_env_file() {
         read -p "Enter TZ [America/New_York]: " TZ
         TZ="${TZ:-America/New_York}"
     else
-        typing_print "TZ=$TZ (from .env.example)"
+        typing_print "TZ=$TZ (from config.env)"
     fi
 
     if [[ -z "$SERVER_IP" ]]; then
         read -p "Enter SERVER_IP: " SERVER_IP
     else
-        typing_print "SERVER_IP=$SERVER_IP (from .env.example)"
+        typing_print "SERVER_IP=$SERVER_IP (from config.env)"
     fi
 
     if [[ -z "$DATADIR" ]]; then
         read -p "Enter DATADIR [/media/storage]: " DATADIR
         DATADIR="${DATADIR:-/media/storage}"
     else
-        typing_print "DATADIR=$DATADIR (from .env.example)"
+        typing_print "DATADIR=$DATADIR (from config.env)"
     fi
 
     read -p "Enter PLEX_CLAIM (leave empty if not available): " PLEX_CLAIM
@@ -177,7 +177,7 @@ create_env_file() {
 
     [ -n "$PLEX_CLAIM" ] && echo "$PLEX_CLAIM" | sudo tee "$SECRETS/plex_claim" > /dev/null
 
-    # Copy .env.example as base and append dynamic values
+    # Copy .env.example as base Docker env template and append dynamic values
     cp "../.env.example" "$ENV_FILE"
 
     cat >> "$ENV_FILE" << EOF
