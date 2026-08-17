@@ -1,14 +1,5 @@
 # Rename shared/config/bash_aliases.env.example and use it as a starter
 
-# SOURCE ENVIRONMENTAL VARIABLES FOR BASH_ALIASES
-if [[ -f "./bash_aliases.env" ]]; then
-  source ./bash_aliases.env
-fi
-
-# CHANGE TO CUSTOM BASH PROMPT
-username="$USER" # or use $USER
-export PS1='[\e[0;32m\u\e[0m@\e[0;33m\H\e[0m: \e[0;36m\w\e[0m]\$ '
-
 # DOCKER - All Docker commands start with "d" AND Docker Compose commands start with "dc"
 alias dstop='sudo docker stop $(sudo docker ps -a -q)' # usage: dstop container_name
 alias dstopall='sudo docker stop $(sudo docker ps -aq)' # stop all containers
@@ -113,13 +104,8 @@ alias mvn="mv --verbose" # native move
 # SEARCH AND FIND
 alias gh='history|grep' # search bash history
 alias findr='sudo find / -name'
-alias grep='grep --color=auto'
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
 
 # TRASH - trash-cli
-alias rm='trash-put'
-alias rmv='rm -rv'
 alias tempty='trash-empty ; sudo trash-empty ; sudo -H trash-empty'
 alias tlist='trash-list'
 alias srmt='sudo trash-put'
@@ -127,10 +113,6 @@ alias srmt='sudo trash-put'
 # FILE SIZE AND STORAGE
 alias fdisk='sudo fdisk -l'
 alias uuid='sudo vol_id -u'
-alias ls='ls -F --color=auto --group-directories-first'
-alias ll='ls -alh --color=auto --group-directories-first'
-alias lt='ls --human-readable --color=auto --size -1 -S --classify' # file size sorted
-alias lsr='ls --color=auto -t -1' # recently modified
 alias mnt='mount | grep -E ^/dev | column -t' # show mounted drives
 alias dirsize='sudo du -hx --max-depth=1'
 alias dirusage='du -ch | grep total' # Grabs the disk usage in the current directory
@@ -229,7 +211,6 @@ alias reboot='sudo reboot'
 alias portsused='sudo netstat -tulpn | grep LISTEN'
 alias showports='netstat -lnptu'
 alias showlistening='lsof -i -n | egrep "COMMAND|LISTEN"'
-alias ping='ping -c 5'
 alias ipe='curl ipinfo.io/ip' # external ip
 alias ipi='ipconfig getifaddr en0' # internal ip
 alias header='curl -I' # get web server headers 
@@ -245,8 +226,6 @@ alias servicerestart='sudo synosystemctl restart'
 alias restartdocker='sudo synosystemctl restart pkgctl-Docker'
 
 # MISCELLANEOUS
-alias wget="wget -c"
-alias nano="sudo nano -iSw$"
 alias scxterm="bash $SCRIPTS/xterm.sh"
 
 # SYSTEM MONITORING
@@ -257,7 +236,6 @@ alias pscpu='ps auxf | sort -nr -k 3' # get top process eating cpu
 alias pscpu10='ps auxf | sort -nr -k 3 | head -10' # get top process eating cpu
 alias cpuinfo='lscpu' # Get server cpu info
 alias gpumeminfo='grep -i --color memory /var/log/Xorg.0.log' # get GPU ram on desktop / laptop
-alias free='free -h'
 
 # RCLONE
 alias rcdlogs="tail -f $LOGS/cloudserver/rclone-drive.log"

@@ -228,9 +228,8 @@ create_directories() {
     typing_print "  - $SECRETS"
     typing_print "  - $SHARED"
 
-    # Create .env file
-    create_env_file
-}
+    # Create or update .env via the Python env manager
+    python3 ./update-env.py $([ ! -f "$ENV_FILE" ] && echo "--init")}
 
 # Set permissions
 set_permissions() {
@@ -369,9 +368,9 @@ add_docker_aliases() {
 
     # Check if bash_aliases file exists in the same directory as the script
     if [[ -f "./bash_aliases" ]]; then
-        # Append the contents of bash_aliases to the bash configuration
-        cat "./bash_aliases" >> "$BASH_CONFIG"
-        typing_print "Docker aliases added to $BASH_CONFIG."
+        # Overwrite entirely so re-runs always reflect the latest version
+        cp "./bash_aliases" "$BASH_CONFIG"
+        typing_print "Docker aliases written to $BASH_CONFIG."
     else
         error_exit "bash_aliases file not found in the current directory."
     fi

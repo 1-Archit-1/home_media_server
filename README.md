@@ -36,6 +36,7 @@ A self-hosted media server stack built on Docker, managed with Docker Compose. I
 | Docker GC | Nightly cleanup of unused images | — |
 | Rclone Backup | Daily appdata backup to Google Drive | — |
 | TorBox Media Center | Generates .strm files from TorBox library for Jellyfin | — |
+| StrmBridge | Syncs TorBox cloud library to .strm files with proper movie/show structure | 9847 |
 
 All media lives at `$DATADIR` (default: `/media/storage`). All app configs live at `~/docker/appdata/`.
 
@@ -117,7 +118,7 @@ The script will:
 - Install Docker and Docker Compose if not present
 - Install Cockpit system management UI
 - Create all required directories under `~/docker/`
-- Generate `~/docker/.env` from your config
+- Generate `~/docker/.env` from your config (via `update-env.py`)
 - Copy compose files and seed app configs
 - Start all containers
 
@@ -138,6 +139,7 @@ Once the script completes, all services are available at `http://YOUR_SERVER_IP:
 | Radarr | http://SERVER_IP:7878 |
 | Prowlarr | http://SERVER_IP:9696 |
 | Bazarr | http://SERVER_IP:6767 |
+| StrmBridge | http://SERVER_IP:9847 |
 | Cockpit | http://SERVER_IP:9090 |
 
 ---
@@ -184,31 +186,136 @@ You can use either or both download clients simultaneously. Decypharr routes dow
 
 To use Decypharr by default, set it to higher priority (drag it above qBittorrent in the list). Disable either client at any time to switch between them.
 
-### 3. Radarr — Movies
+### 4. Radarr — Movies
 
 1. Go to `http://SERVER_IP:7878`
 2. **Settings → Media Management → Add Root Folder**: `/data/media/movies`
 3. **Settings → Download Clients** — add download client(s) as above
 4. Prowlarr sync adds indexers automatically if configured in step 1
 
-### 4. Sonarr — TV Shows
+### 5. Sonarr — TV Shows
 
 1. Go to `http://SERVER_IP:8989`
 2. **Settings → Media Management → Add Root Folder**: `/data/media/tvshows`
 3. **Settings → Download Clients** — add download client(s) as above
 
-### 5. Bazarr — Subtitles
+### 6. Bazarr — Subtitles
 
 1. Go to `http://SERVER_IP:6767`
-2. **Settings → Sonarr**: host `sonarr`, port `8989`, API key from Sonarr
-3. **Settings → Radarr**: host `radarr`, port `7878`, API key from Radarr
-4. **Settings → Providers** — add subtitle providers (OpenSubtitles, Subscene etc.)
+2. **Settings → Sonarr**: host `sonarr`, port `8989`, API key from Sonarr → Settings → General
+3. **Settings → Radarr**: host `radarr`, port `7878`, API key from Radarr → Settings → General
+4. **Settings → Providers** — add subtitle providers (OpenSubtitles, Subscene, etc.)
+5. **Settings → Languages → Add Language Profile** — create a profile with your preferred languages (e.g. English). Set it as the default for both Series and Movies so every item gets a profile automatically.
+6. **Settings → Languages → Default Settings** — enable "Series Default" and "Movies Default" and select your profile. Without a default profile, Bazarr won't fetch subtitles for items that don't have one explicitly assigned.
 
-### 6. Jellyfin — Media Server
+**Jellyfin plugin (recommended):**
+
+Install the Bazarr plugin in Jellyfin so subtitles fetched by Bazarr are automatically refreshed in Jellyfin without needing a full library scan:
+
+1. Jellyfin → **Dashboard → Plugins → Repositories** — add the Bazarr plugin repository
+2. **Catalog** — search for Bazarr and install
+3. Restart Jellyfin, then in Bazarr: **Settings → Jellyfin** — enter your Jellyfin URL (`http://jellyfin:8096`) and API key from Jellyfin → Dashboard → API Keys
+
+### 7. Jellyfin — Media Server
 
 1. Go to `http://SERVER_IP:8096` and complete the initial setup wizard
 2. **Add Media Library → Movies**: `/data/media/movies`
 3. **Add Media Library → TV Shows**: `/data/media/tvshows`
+4. Optionally add TorBox cloud libraries — see the StrmBridge section below
+
+---
+
+## TorBox Cloud Library (StrmBridge)
+
+StrmBridge syncs your TorBox cloud account to `.strm` files that Jellyfin can stream directly — no local storage needed. It runs independently of Sonarr/Radarr and gives you a browsable view of everything in your TorBox account.
+
+It polls TorBox every 5 minutes and organizes content into a proper folder structure:
+
+```
+$DATADIR/media/strmbridge/
+  Movies/
+    Movie Name (2024)/
+      Movie Name (2024) - 1080p WEB-DL.strm
+  TV Shows/
+    Show Name/
+      Season 01/
+        Show Name - S01E01.strm
+```
+
+### Setup
+
+1. Make sure `TORBOX_API_KEY` is set in `~/docker/.env`
+2. Bring up the container:
+```bash
+dcup
+```
+3. Trigger an immediate sync (optional — it will sync automatically within 5 minutes):
+```bash
+curl -X POST http://SERVER_IP:9847/api/sync
+```
+4. Check sync status:
+```bash
+curl http://SERVER_IP:9847/api/status
+```
+5. Add the libraries in Jellyfin:
+   - **Movies**: `/data/media/strmbridge/Movies`
+   - **TV Shows**: `/data/media/strmbridge/TV Shows`
+
+> Files stream directly from TorBox and are subject to TorBox's retention policy. If you want a permanent local copy of something, trigger a download through Sonarr/Radarr/Decypharr instead.
+
+---
+
+## TorBox Media Center
+
+TorBox Media Center is an alternative `.strm` generator that uses filename-based classification (PTN library). It runs alongside StrmBridge and writes to a separate folder.
+
+Output is at `$DATADIR/media/torbox-strm/` (movies/ and series/ subdirectories).
+
+> StrmBridge is preferred for most cases — it produces a cleaner folder structure that Jellyfin handles better. TorBox Media Center is kept as a fallback.
+
+---
+
+## Environment Variables
+
+Configuration is split across three files with distinct purposes:
+
+**`scripts/config.env`** — committed to the repo, shell scripts only. Edit this before running `udms.sh`:
+- `TZ`, `SERVER_IP`, `DATADIR` — your environment settings
+- Script internal paths (`APPDATA`, `COMPOSE`, etc.) — derived automatically, do not edit
+
+**`.env.example`** — committed to the repo, reference documentation only. Lists every Docker variable the stack supports. Used as the base template when generating `~/docker/.env`. Do not edit during normal use.
+
+**`~/docker/.env`** — never committed, generated and managed by `update-env.py`. This is what Docker Compose reads at runtime.
+
+### update-env.py
+
+A Python script that manages `~/docker/.env` intelligently. Run it from the `scripts/` directory:
+
+```bash
+cd ~/home-server/scripts
+
+# Update computed vars (PUID, PGID, HOMEPAGE_VAR_* URLs etc.) — safe to run anytime
+python3 update-env.py
+
+# First-time setup — prompts for all secrets and creates .env
+python3 update-env.py --init
+
+# Re-prompt for a specific secret (e.g. after rotating an API key)
+python3 update-env.py --prompt TORBOX_API_KEY
+python3 update-env.py --prompt HOMEPAGE_VAR_JELLYFIN_API_KEY HOMEPAGE_VAR_SONARR_API_KEY
+```
+
+**Variable categories:**
+
+| Category | Examples | Behavior |
+|---|---|---|
+| Computed | `PUID`, `PGID`, `HOMEPAGE_VAR_*_URL` | Always recalculated from `config.env` |
+| User config | `TZ`, `SERVER_IP`, `DATADIR` | Updated from `config.env` on each run |
+| Secrets | `TORBOX_API_KEY`, API keys, passwords | Never overwritten — preserved or prompted |
+
+> If you change `SERVER_IP` in `config.env`, run `python3 update-env.py` and all `HOMEPAGE_VAR_*_URL` values will update automatically. No manual editing needed.
+
+**Secrets** (API keys, passwords) should only ever exist in `~/docker/.env`, never in committed files.
 
 ---
 
@@ -266,47 +373,6 @@ sudo systemctl enable docker
 
 ---
 
-## Environment Variables
-
-Two files manage configuration:
-
-- **`scripts/config.env`** — committed to the repo. Shell script config only — non-secret settings (TZ, SERVER_IP, DATADIR) and script internal paths. Never read by Docker Compose.
-- **`.env.example`** — committed to the repo. Documents all Docker environment variables. Used as the base template when generating `~/docker/.env`.
-- **`~/docker/.env`** — never committed. Generated by `udms.sh` on first run. This is what Docker Compose actually reads at runtime.
-
-**To add a new variable:**
-1. If it's a Docker variable — add it (blank or with a safe default) to `.env.example`, then add the real value to `~/docker/.env`:
-```bash
-sudo nano ~/docker/.env
-```
-2. If it's a script/path variable — add it to `scripts/config.env`.
-
-**Secrets** (API keys, passwords) should only ever exist in `~/docker/.env`, never in committed files.
-
----
-
-## TorBox Media Center
-
-TorBox Media Center generates `.strm` files from your TorBox cloud library and organizes them into `movies/` and `series/` folders. Jellyfin can open `.strm` files and stream the content directly from TorBox — no local storage needed.
-
-It runs on a 5-minute schedule and keeps the library in sync with your TorBox account automatically.
-
-### Setup
-
-1. Make sure `TORBOX_API_KEY` is set in `~/docker/.env`
-2. Bring up the container:
-```bash
-dcup
-```
-3. After a few minutes, `.strm` files will appear at `$DATADIR/media/torbox-strm/`
-4. Add the libraries in Jellyfin:
-   - **Movies**: `/data/media/torbox-strm/movies`
-   - **TV Shows**: `/data/media/torbox-strm/series`
-
-> Files stream directly from TorBox and are subject to TorBox's 30-day retention. If you want a permanent local copy, trigger a download through Sonarr/Radarr/Decypharr.
-
----
-
 ## Making Changes
 
 If you add/remove services in `docker-compose.yml` or modify any config files in `configs/`, re-run the relevant parts manually:
@@ -340,7 +406,7 @@ dcpull && dcup
 
 There are 75+ service compose files in the `compose/` directory. To enable one:
 
-1. Add it to `master-compose.yml` under the relevant section:
+1. Add it to `docker-compose.yml` under the relevant section:
 
 ```yaml
 include:
@@ -348,10 +414,12 @@ include:
   - compose/filebrowser.yml
 ```
 
-2. Bring it up:
+2. Copy to the Docker runtime folder and bring it up:
 
 ```bash
-sudo docker compose -f ~/docker/master-compose.yml up -d
+cp ~/home-server/docker-compose.yml ~/docker/master-compose.yml
+cp ~/home-server/compose/filebrowser.yml ~/docker/compose/filebrowser.yml
+dcup
 ```
 
 ---
