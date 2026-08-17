@@ -31,6 +31,7 @@ include:
   - compose/jellyfin.yml
   - compose/torbox-media-center.yml
   - compose/strmbridge.yml
+  - compose/stremthru.yml
   # DOWNLOADERS
   # - compose/sabnzbd.yml
   # - compose/deluge.yml

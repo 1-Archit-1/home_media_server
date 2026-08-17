@@ -1,0 +1,24 @@
+services:
+  # StremThru - Stremio companion: Torz (debrid torrent search addon) + Store backend
+  # Web UI / addon config: http://SERVER_IP:8080
+  # Prowlarr indexer: add stremthru.yml cardigann definition, set URL to http://stremthru:8080
+  # Torz addon for Stremio: http://SERVER_IP:8080/stremio/torz/configure
+  stremthru:
+    image: muniftanjim/stremthru:latest
+    container_name: stremthru
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "8080:8080"
+    volumes:
+      - $DOCKERDIR/appdata/stremthru:/app/data
+    environment:
+      TZ: $TZ
+      STREMTHRU_STORE_AUTH: $STREMTHRU_STORE_AUTH       # auto-set by update-env.py from TORBOX_API_KEY
+      STREMTHRU_AUTH: ${STREMTHRU_AUTH:-}             # optional: restrict access, e.g. user:password
+      STREMTHRU_AUTH_ADMIN: ${STREMTHRU_AUTH_ADMIN:-} # optional: admin credentials
+      STREMTHRU_TUNNEL: "*:false"
+      STREMTHRU_STORE_TUNNEL: "*:false"

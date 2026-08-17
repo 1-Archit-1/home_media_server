@@ -37,6 +37,7 @@ A self-hosted media server stack built on Docker, managed with Docker Compose. I
 | Rclone Backup | Daily appdata backup to Google Drive | — |
 | TorBox Media Center | Generates .strm files from TorBox library for Jellyfin | — |
 | StrmBridge | Syncs TorBox cloud library to .strm files with proper movie/show structure | 9847 |
+| StremThru | Stremio companion: Torz debrid search addon + Store proxy backend | 8080 |
 
 All media lives at `$DATADIR` (default: `/media/storage`). All app configs live at `~/docker/appdata/`.
 
@@ -140,6 +141,7 @@ Once the script completes, all services are available at `http://YOUR_SERVER_IP:
 | Prowlarr | http://SERVER_IP:9696 |
 | Bazarr | http://SERVER_IP:6767 |
 | StrmBridge | http://SERVER_IP:9847 |
+| StremThru | http://SERVER_IP:8080 |
 | Cockpit | http://SERVER_IP:9090 |
 
 ---
@@ -262,6 +264,65 @@ curl http://SERVER_IP:9847/api/status
    - **TV Shows**: `/data/media/strmbridge/TV Shows`
 
 > Files stream directly from TorBox and are subject to TorBox's retention policy. If you want a permanent local copy of something, trigger a download through Sonarr/Radarr/Decypharr instead.
+
+---
+
+## StremThru (Torz + Store)
+
+StremThru is a self-hosted Stremio companion that provides two things:
+
+- **Torz** — a crowdsourced torrent/debrid search addon for Stremio and a Prowlarr-compatible indexer for Sonarr/Radarr
+- **Store** — a proxy backend that lets other addons (Comet, etc.) route debrid traffic through your server
+
+`STREMTHRU_STORE_AUTH` is derived automatically from `TORBOX_API_KEY` by `update-env.py` — no extra API key needed.
+
+### Verify it's working
+
+After the container is up, confirm TorBox credentials are wired in correctly:
+
+```bash
+# Check the env var made it into the container
+docker exec stremthru env | grep STREMTHRU
+
+# Verify TorBox store is reachable and the key is valid
+# Replace "archit" with your system username if different
+curl http://localhost:8080/v0/store/user \
+  -H "Proxy-Authorization: Basic $(echo -n 'archit:torbox' | base64)"
+# Expected: JSON with your TorBox account info
+
+# Test a torrent search (Fight Club by IMDB ID)
+curl "http://localhost:8080/v0/torrents?sid=tt0137523" \
+  -H "Proxy-Authorization: Basic $(echo -n 'archit:torbox' | base64)"
+# Expected: JSON with items array
+```
+
+### Use Torz in Stremio
+
+Go to `http://SERVER_IP:8080/stremio/torz/configure`, generate your addon URL, and install it in Stremio. Cached results play instantly; uncached ones are queued for download by TorBox.
+
+### Add Torz (and other custom indexers) to Prowlarr
+
+The repo ships cardigann indexer definitions for StremThru Torz, Torrentio, and Comet in the root directory. Copy them to Prowlarr's custom definitions folder so they appear as addable indexers:
+
+```bash
+mkdir -p ~/docker/appdata/prowlarr/Definitions/Custom
+
+# StremThru Torz — searches via your self-hosted StremThru instance
+cp ~/home-server/stremthru.yml ~/docker/appdata/prowlarr/Definitions/Custom/stremthru.yml
+
+# Torrentio — public torrent/debrid search (configure your debrid key inside Prowlarr)
+cp ~/home-server/torrentio.yml ~/docker/appdata/prowlarr/Definitions/Custom/torrentio.yml
+
+# Comet — debrid search addon (requires a running Comet instance)
+cp ~/home-server/comet.yml ~/docker/appdata/prowlarr/Definitions/Custom/comet.yml
+
+# Restart Prowlarr to pick up the new definitions
+dcrec prowlarr
+```
+
+Then in Prowlarr → **Indexers → Add Indexer**, search for "Stremthru" (or "Torrentio" / "Comet") and they'll appear. The StremThru indexer URL is pre-set to `http://stremthru:8080` and resolves automatically since both containers share the same Docker network.
+
+> Cached vs uncached: Prowlarr passes whatever it finds to Decypharr, which hands it to TorBox. If the torrent is cached on TorBox it completes in seconds; if not, TorBox downloads it in the background. You don't need to judge cache status manually — Decypharr handles it either way.
 
 ---
 

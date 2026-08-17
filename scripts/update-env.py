@@ -50,6 +50,7 @@ COMPUTED_VARS = {
     "HOMEPAGE_VAR_BAZARR_URL",
     "HOMEPAGE_VAR_HOMARR_URL",
     "HOMEPAGE_VAR_DECYPHARR_URL",
+    "STREMTHRU_STORE_AUTH",
 }
 
 # ---------------------------------------------------------------------------
@@ -157,12 +158,21 @@ def prompt_secret(key: str, current: str) -> str:
     return val if val else current
 
 
-def compute_vars(config: dict) -> dict:
+def compute_vars(config: dict, existing_vars: dict = None) -> dict:
     """Compute all auto-derived variables from config.env values."""
+    existing_vars = existing_vars or {}
     docker_root = config.get("DOCKER_ROOT", "")
     if not docker_root or "$" in docker_root:
         docker_root = os.path.join(os.path.expanduser("~"), "docker")
     server_ip = config.get("SERVER_IP", "")
+
+    # Derive STREMTHRU_STORE_AUTH from the existing TORBOX_API_KEY secret.
+    # Format: <username>:torbox=<api_key>  — username is the system user.
+    torbox_key = existing_vars.get("TORBOX_API_KEY", "")
+    stremthru_username = os.path.basename(os.path.expanduser("~"))
+    stremthru_store_auth = (
+        f"{stremthru_username}:torbox={torbox_key}" if torbox_key else ""
+    )
 
     return {
         "PUID":                          str(os.getuid()),
@@ -181,6 +191,7 @@ def compute_vars(config: dict) -> dict:
         "HOMEPAGE_VAR_BAZARR_URL":       f"http://{server_ip}:6767",
         "HOMEPAGE_VAR_HOMARR_URL":       f"http://{server_ip}:7575",
         "HOMEPAGE_VAR_DECYPHARR_URL":    f"http://{server_ip}:8282",
+        "STREMTHRU_STORE_AUTH":          stremthru_store_auth,
     }
 
 
@@ -207,7 +218,7 @@ def update_env(init: bool = False, prompt_keys: list = None) -> None:
                         if t == "var" for k, v in [c]}
 
     # 3. Compute fresh values
-    computed = compute_vars(config)
+    computed = compute_vars(config, existing_vars)
 
     # 4. Build the user-config vars from config.env
     user_config_vars = {
@@ -230,6 +241,9 @@ def update_env(init: bool = False, prompt_keys: list = None) -> None:
 
     # 6. Merge everything into a final dict
     # Priority: computed > user_config > secrets > existing (for unknowns)
+    # Re-run compute_vars now that secrets are resolved (e.g. TORBOX_API_KEY may
+    # have just been prompted for the first time via --init).
+    computed = compute_vars(config, {**existing_vars, **secrets})
     final_vars = {**existing_vars, **user_config_vars, **secrets, **computed}
 
     # 7. If new file, build from .env.example structure + dynamic block
