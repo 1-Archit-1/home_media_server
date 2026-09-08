@@ -229,7 +229,12 @@ create_directories() {
     typing_print "  - $SHARED"
 
     # Create or update .env via the Python env manager
-    python3 ./update-env.py $([ ! -f "$ENV_FILE" ] && echo "--init")}
+    if [[ -f "$ENV_FILE" ]]; then
+        python3 ./update-env.py
+    else
+        python3 ./update-env.py --init
+    fi
+}
 
 # Set permissions
 set_permissions() {
@@ -261,121 +266,64 @@ set_permissions() {
 
 # Create Docker Compose files
 create_compose_files() {
-    typing_print "Creating master docker-compose file..."
-    cp "$DOCKER_COMPOSE" "$MASTER_COMPOSE"
-    typing_print "Master docker-compose file created: $MASTER_COMPOSE"
+    typing_print "Creating runtime docker-compose file..."
+    cp "$SOURCE_COMPOSE" "$COMPOSE_FILE"
+    typing_print "Runtime compose file created: $COMPOSE_FILE"
 
-    local services=(
-        "socket-proxy"
-        "portainer"
-        "dozzle"
-        "homepage"
-        "homarr"
-        "plex"
-        "jellyfin"
-        "qbittorrent"
-        "decypharr"
-        "torbox-media-center"
-        "sonarr"
-        "radarr"
-        "prowlarr"
-        "bazarr"
-        "docker-gc"
-        "watchtower"
-        "rclone-backup"
-    )
-
-    typing_print "Creating compose files..."
-    for service in "${services[@]}"; do
-        cp "$COMPOSE_FILES/$service.yml" "$COMPOSE/$service.yml"
-        typing_print "Created: $COMPOSE/$service.yml"
-    done
-    typing_print "Compose files created."
+    typing_print "Syncing component compose files..."
+    cp "$COMPOSE_FILES"/*.yml "$COMPOSE/"
+    typing_print "Component compose files synced to: $COMPOSE"
 }
 
 # Start Docker containers
 start_containers() {
     typing_print "Starting the containers..."
-    sudo docker compose -f "$MASTER_COMPOSE" up -d --remove-orphans || error_exit "Failed to start containers."
+    sudo docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans || error_exit "Failed to start containers."
 }
 
-# Replace homepage configuration files
+# Seed a runtime configuration file on first setup without overwriting edits.
+seed_file() {
+    local source="$1"
+    local destination="$2"
+
+    mkdir -p "$(dirname "$destination")"
+    if [[ -e "$destination" ]]; then
+        typing_print "Preserved existing configuration: $destination"
+        return 0
+    fi
+
+    cp "$source" "$destination" || error_exit "Failed to seed configuration: $destination"
+    typing_print "Seeded configuration: $destination"
+}
+
+# Seed Homepage configuration files on first setup.
 create_homepage_config() {
-    typing_print "Creating homepage configuration files..."
-
-    # Ensure the destination directory exists
-    mkdir -p "$APPDATA/homepage"
-        
-    local files=("bookmarks.yaml" "services.yaml" "settings.yaml" "widgets.yaml")
-
-    # Copy the configuration files
+    typing_print "Seeding Homepage configuration files..."
+    local file
     for file in bookmarks.yaml services.yaml settings.yaml widgets.yaml; do
-        if cp "$HOMEPAGE_CONFIG/$file" "$APPDATA/homepage/$file"; then
-            typing_print "Created $file"
-        else
-            echo "Failed to create $file"
-        fi
+        seed_file "$HOMEPAGE_CONFIG/$file" "$APPDATA/homepage/$file"
     done
-    
-    typing_print "Homepage configuration files created."
 }
 
-# Replace qBittorrent configuration file
+# Seed qBittorrent configuration on first setup.
 create_qbittorrent_config() {
-    typing_print "Creating qBittorrent configuration file..."
-    
-    # Ensure the destination directory exists
-    mkdir -p "$(dirname "$QBITTORRENT_CONF")"
-    
-    # Copy the configuration file
-    if cp "$QBITTORRENT_CONFIG" "$QBITTORRENT_CONF"; then
-        typing_print "Created $QBITTORRENT_CONF."
-    else
-        echo "Failed to create qbittorrent.conf."
-    fi
+    typing_print "Seeding qBittorrent configuration..."
+    seed_file "$QBITTORRENT_CONFIG" "$QBITTORRENT_CONF"
 }
 
-# Replace qBittorrent configuration file
+# Seed Deluge configuration on first setup.
 create_deluge_config() {
-    typing_print "Creating Deluge configuration file..."
-    
-    # Copy the configuration file
-    if cp "$DELUGE_CONFIG1" "$DELUGE_CONF1"; then
-        typing_print "Created $DELUGE_CONF1."
-    else
-        echo "Failed to create deluge.conf."
-    fi
-    if cp "$DELUGE_CONFIG2" "$DELUGE_CONF2"; then
-        typing_print "Created $DELUGE_CONF1."
-    else
-        echo "Failed to create deluge.conf."
-    fi
-
+    typing_print "Seeding Deluge configuration..."
+    seed_file "$DELUGE_CONFIG1" "$DELUGE_CONF1"
+    seed_file "$DELUGE_CONFIG2" "$DELUGE_CONF2"
 }
 
-# Add Docker aliases to bash configuration
-add_docker_aliases() { 
-    typing_print "Adding Docker aliases..."
+# Add Docker aliases to bash configuration without replacing existing files.
+add_docker_aliases() {
+    typing_print "Seeding Docker aliases..."
+    seed_file "./bash_aliases.env.example" "$BASH_ENV"
+    seed_file "./bash_aliases" "$BASH_CONFIG"
 
-    # Copy bash_aliases.env.example to $BASH_ENV
-    if [[ -f "./bash_aliases.env.example" ]]; then
-        mkdir -p "$SHARED/config"
-        cp "./bash_aliases.env.example" "$BASH_ENV"
-        typing_print "Created $BASH_ENV."
-    else
-        error_exit "bash_aliases.env.example file not found in the current directory."
-    fi
-
-    # Check if bash_aliases file exists in the same directory as the script
-    if [[ -f "./bash_aliases" ]]; then
-        # Overwrite entirely so re-runs always reflect the latest version
-        cp "./bash_aliases" "$BASH_CONFIG"
-        typing_print "Docker aliases written to $BASH_CONFIG."
-    else
-        error_exit "bash_aliases file not found in the current directory."
-    fi
-
-    # Ensure .bashrc sources .bash_aliases
     if ! grep -q "source $BASH_CONFIG" "$BASHRC"; then
         echo "[[ -f $BASH_ENV ]] && source $BASH_ENV" >> "$BASHRC"
         echo "[[ -f $BASH_CONFIG ]] && source $BASH_CONFIG" >> "$BASHRC"
@@ -383,39 +331,18 @@ add_docker_aliases() {
     else
         typing_print "$BASHRC already sources $BASH_CONFIG."
     fi
-
-    # Source the .bashrc to apply changes on next login
-    typing_print "Docker aliases will be available in new shell sessions."
 }
 
-# Create Decypharr configuration file
+# Seed Decypharr configuration on first setup.
 create_decypharr_config() {
-    typing_print "Creating Decypharr configuration file..."
-
-    mkdir -p "$APPDATA/decypharr"
-
-    if cp "$DECYPHARR_CONFIG" "$APPDATA/decypharr/config.json"; then
-        typing_print "Created $APPDATA/decypharr/config.json"
-        typing_print "Decypharr will complete setup via its web UI on first launch."
-    else
-        echo "Failed to create decypharr config."
-    fi
+    typing_print "Seeding Decypharr configuration..."
+    seed_file "$DECYPHARR_CONFIG" "$APPDATA/decypharr/config.json"
 }
 
-# Function to create docker-gc-exclude file
+# Seed the docker-gc exclusion file on first setup.
 create_docker_gc_exclude() {
-    typing_print "Creating docker-gc-exclude file..."
-
-    # Ensure the destination directory exists
-    mkdir -p "$APPDATA/docker-gc"
-
-    # Copy the docker-gc-exclude file from the local directory
-    cp "$DOCKERGC_EXCLUDE" "$APPDATA/docker-gc/docker-gc-exclude"
-    if [ $? -eq 0 ]; then
-        typing_print "docker-gc-exclude file created successfully."
-    else
-        error_exit "Failed to create docker-gc-exclude file."
-    fi
+    typing_print "Seeding docker-gc exclusion file..."
+    seed_file "$DOCKERGC_EXCLUDE" "$APPDATA/docker-gc/docker-gc-exclude"
 }
 
 print_setup_complete() {

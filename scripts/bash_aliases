@@ -1,4 +1,6 @@
-# Rename shared/config/bash_aliases.env.example and use it as a starter
+# Runtime Compose paths. Override before sourcing this file only for a non-default Docker root.
+COMPOSE_FILE="${COMPOSE_FILE:-$HOME/docker/docker-compose.yml}"
+ENV_FILE="${ENV_FILE:-$HOME/docker/.env}"
 
 # DOCKER - All Docker commands start with "d" AND Docker Compose commands start with "dc"
 alias dstop='sudo docker stop $(sudo docker ps -a -q)' # usage: dstop container_name
@@ -23,10 +25,10 @@ alias dp777="sudo chown -R $USER:$USER $SECRETS ; sudo chmod -R 777 $SECRETS ; s
 # DOCKER COMPOSE - All docker-compose commands start with "dc"
 case $HOSTNAME in
     ds918) # synology at this point uses an old version of docker. Therefore, 'docker-compose' instead of 'docker compose'
-      alias dcrun="sudo docker-compose -f $MASTER_COMPOSE" # /volume1/docker symlinked to /var/services/homes/user/docker
+      alias dcrun="sudo docker-compose --env-file $ENV_FILE -f $COMPOSE_FILE" # /volume1/docker symlinked to /var/services/homes/user/docker
       ;;
     *)
-      alias dcrun="sudo docker compose -f $MASTER_COMPOSE"
+      alias dcrun="sudo docker compose --env-file $ENV_FILE -f $COMPOSE_FILE"
       ;;
 esac
 

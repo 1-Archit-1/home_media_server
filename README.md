@@ -436,29 +436,29 @@ sudo systemctl enable docker
 
 ## Making Changes
 
-If you add/remove services in `docker-compose.yml` or modify any config files in `configs/`, re-run the relevant parts manually:
+`udms.sh` is a first-time setup script. It installs system dependencies and seeds configuration files only when they do not already exist. Use the purpose-built scripts below for routine operations.
 
-**Copy updated compose files:**
+**Deploy Compose changes** after enabling, disabling, or editing a service:
 ```bash
-cp ~/home-server/docker-compose.yml ~/docker/master-compose.yml
-cp ~/home-server/compose/<service>.yml ~/docker/compose/<service>.yml
+cd ~/home-server/scripts
+./deploy.sh
 ```
 
-**Copy updated app configs (e.g. homepage):**
+`deploy.sh` synchronizes `docker-compose.yml` and every `compose/*.yml` file to `~/docker`, validates the rendered configuration with `~/docker/.env`, then runs `up -d --remove-orphans`. It never overwrites `~/docker/appdata`.
+
+**Synchronize a configuration template intentionally:**
 ```bash
-cp ~/home-server/configs/homepage/docker-configs/*.yaml ~/docker/appdata/homepage/
+cd ~/home-server/scripts
+./sync-config.sh --dry-run homepage
+./sync-config.sh homepage
 ```
 
-**Apply changes and bring containers up:**
-```bash
-dcup
-# or force recreate a specific container after a config change:
-dcrec <service>
-```
+`sync-config.sh` backs up each affected runtime file alongside its destination before replacing it. Supported targets are `homepage`, `qbittorrent`, `deluge`, `decypharr`, `docker-gc`, `aliases`, and `all`.
 
-**Pull latest images before bringing up:**
+**Pull latest images before deployment:**
 ```bash
-dcpull && dcup
+dcpull
+./deploy.sh
 ```
 
 ---
@@ -475,12 +475,11 @@ include:
   - compose/filebrowser.yml
 ```
 
-2. Copy to the Docker runtime folder and bring it up:
+2. Deploy the updated stack:
 
 ```bash
-cp ~/home-server/docker-compose.yml ~/docker/master-compose.yml
-cp ~/home-server/compose/filebrowser.yml ~/docker/compose/filebrowser.yml
-dcup
+cd ~/home-server/scripts
+./deploy.sh
 ```
 
 ---
