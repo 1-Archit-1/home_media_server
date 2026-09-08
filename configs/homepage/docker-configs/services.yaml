@@ -11,10 +11,6 @@
         icon: dozzle.svg
         href: "{{HOMEPAGE_VAR_DOZZLE_URL}}"
         description: container logs
-    - Homarr:
-        icon: homarr.svg
-        href: "{{HOMEPAGE_VAR_HOMARR_URL}}"
-        description: dashboard
 
 - Media:
     - Jellyfin:

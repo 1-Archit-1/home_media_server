@@ -1,0 +1,16 @@
+services:
+  # Remux - Jellyfin-compatible media server for local files and Stremio add-ons
+  # Web UI / API: http://SERVER_IP:3010
+  remux:
+    image: ghcr.io/lostb1t/remux:latest
+    container_name: remux
+    networks:
+      - default
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+    volumes:
+      - $DOCKERDIR/appdata/remux:/data
+      - $DATADIR/media:/data/media:ro

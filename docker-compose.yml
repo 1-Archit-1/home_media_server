@@ -26,10 +26,11 @@ include:
   - compose/portainer.yml
   - compose/dozzle.yml
   - compose/homepage.yml
-  - compose/homarr.yml
+  # - compose/homarr.yml
   # MEDIA
   - compose/jellyfin.yml
-  - compose/torbox-media-center.yml
+  - compose/remux.yml
+  # - compose/torbox-media-center.yml
   - compose/strmbridge.yml
   - compose/stremthru.yml
   # DOWNLOADERS
