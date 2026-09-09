@@ -17,7 +17,10 @@
         icon: jellyfin.svg
         href: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
         description: media server
-
+    - Remux:
+        icon: remux.svg
+        href: "{{HOMEPAGE_VAR_REMUX_URL}}"
+        description: media server
 - Downloads:
     - qBittorrent:
         icon: qbittorrent.svg
