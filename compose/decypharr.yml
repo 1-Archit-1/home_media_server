@@ -7,9 +7,7 @@ services:
     image: cy01/blackhole:latest
     container_name: decypharr
     security_opt:
-      - apparmor:unconfined
-      - label=disable
-    privileged: true
+      - no-new-privileges:true
     restart: unless-stopped
     networks:
       - default
@@ -18,12 +16,8 @@ services:
       - "8283:8283"   # WebDAV server (optional, for direct library mounting)
     volumes:
       - $DOCKERDIR/appdata/decypharr:/app
-      - $DATADIR/downloads:/data/downloads:rshared
-      - $DATADIR/media:/data/media:rshared
-    devices:
-      - /dev/fuse:/dev/fuse:rwm                    # required for FUSE/rclone mount feature
-    cap_add:
-      - SYS_ADMIN                                  # required for FUSE mount
+      - $DATADIR/downloads:/data/downloads
+      - $DATADIR/media:/data/media
     environment:
       TZ: $TZ
       PUID: $PUID

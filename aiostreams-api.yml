@@ -8,6 +8,7 @@ followredirect: false
 testlinktorrent: false
 requestDelay: 5
 links:
+  # - https://your-aiostreams-instance.example.com  # add your personal link here
   - http://aiostreams:3000
   - https://aiostreams.viren070.me
   - https://aiostreamsfortheweak.nhyira.dev

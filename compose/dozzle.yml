@@ -12,13 +12,12 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - $DOCKERDIR/appdata/dozzle:/data
     environment:
       DOZZLE_LEVEL: info
       DOZZLE_TAILSIZE: 300
       DOZZLE_FILTER: "status=running"
       # DOZZLE_FILTER: "label=log_me" # limits logs displayed to containers with this label
-      # DOCKER_HOST: tcp://socket-proxy:2375
+      DOCKER_HOST: tcp://socket-proxy:2375
     # volumes:
     #  - /var/run/docker.sock:/var/run/docker.sock # Use Docker Socket Proxy instead for improved security

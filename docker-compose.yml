@@ -9,13 +9,6 @@ networks:
       config:
         - subnet: 192.168.91.0/24
 
-########################### SECRETS
-secrets:
-  plex_claim:
-    file: $DOCKERDIR/secrets/plex_claim
-  # mysql_root_password:
-  #   file: $DOCKERDIR/secrets/mysql_root_password
-
 include:
   ########################### SERVICES
   # PREFIX udms = Ultimate Docker Media Server
