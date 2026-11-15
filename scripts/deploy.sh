@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Deploy the canonical Compose definitions without overwriting application data.
+# deploy.sh — Redeploy the Compose stack after pulling repo updates.
+# Recomputes ~/docker/.env via update-env.py (preserving secrets), copies
+# docker-compose.yml and compose/*.yml into ~/docker/ without touching appdata,
+# validates the merged config, and runs `docker compose up -d --remove-orphans`.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

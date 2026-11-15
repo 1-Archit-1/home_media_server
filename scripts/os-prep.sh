@@ -1,4 +1,7 @@
 #!/bin/bash
+# os-prep.sh — Optional first-time OS hardening for fresh Debian/Ubuntu hosts.
+# Creates a sudo user, updates packages, configures a custom SSH port, tunes
+# sysctl (swappiness, inotify watches), and enables UFW for LAN access.
 
 # Prompt for username and port number
 read -p "Enter the username to add: " USERNAME

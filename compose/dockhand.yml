@@ -17,6 +17,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - $DOCKERDIR/appdata/dockhand:/app/data
     group_add:
-      - "970"  # docker group GID on host — allows container to access docker.sock
+      - "${DOCKER_GID:-970}"  # docker group GID on host — auto-set by update-env.py
     environment:
       TZ: $TZ

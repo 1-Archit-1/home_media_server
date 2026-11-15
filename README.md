@@ -21,21 +21,19 @@ A self-hosted media server stack built on Docker, managed with Docker Compose. I
 | Service | Purpose | Port |
 |---|---|---|
 | Socket Proxy | Secure Docker socket access for other containers | internal |
-| Portainer | Docker container management UI | 9000 |
+| Dockhand | Docker container management UI & scheduled updates | 3001 |
 | Dozzle | Real-time container log viewer | 8082 |
 | Homepage | Main dashboard | 3000 |
-| Homarr | Visual dashboard with live service widgets | 7575 |
 | Jellyfin | Media server | 8096 |
-| qBittorrent | Torrent download client | 8081 |
+| Remux | Jellyfin-compatible media server for local files and Stremio add-ons | 3010 |
+| qBittorrent | Torrent download client (backup) | 8081 |
 | Decypharr | TorBox debrid download client (mock qBittorrent API) | 8282 |
 | Sonarr | TV show automation | 8989 |
 | Radarr | Movie automation | 7878 |
 | Prowlarr | Indexer manager for Sonarr/Radarr | 9696 |
 | Bazarr | Subtitle downloader | 6767 |
-| Watchtower | Automatic container image updates | — |
 | Docker GC | Nightly cleanup of unused images | — |
 | Rclone Backup | Daily appdata backup to Google Drive | — |
-| TorBox Media Center | Generates .strm files from TorBox library for Jellyfin | — |
 | StrmBridge | Syncs TorBox cloud library to .strm files with proper movie/show structure | 9847 |
 | StremThru | Stremio companion: Torz debrid search addon + Store proxy backend | 8080 |
 
@@ -130,10 +128,10 @@ Once the script completes, all services are available at `http://YOUR_SERVER_IP:
 | Service | URL |
 |---|---|
 | Homepage | http://SERVER_IP:3000 |
-| Homarr | http://SERVER_IP:7575 |
-| Portainer | http://SERVER_IP:9000 |
+| Dockhand | http://SERVER_IP:3001 |
 | Dozzle | http://SERVER_IP:8082 |
 | Jellyfin | http://SERVER_IP:8096 |
+| Remux | http://SERVER_IP:3010 |
 | qBittorrent | http://SERVER_IP:8081 |
 | Decypharr | http://SERVER_IP:8282 |
 | Sonarr | http://SERVER_IP:8989 |
@@ -326,7 +324,7 @@ Then in Prowlarr → **Indexers → Add Indexer**, search for "Stremthru" (or "T
 
 ---
 
-## TorBox Media Center
+## TorBox Media Center (Optional / Disabled by Default)
 
 TorBox Media Center is an alternative `.strm` generator that uses filename-based classification (PTN library). It runs alongside StrmBridge and writes to a separate folder.
 

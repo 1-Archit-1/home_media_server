@@ -1,16 +1,33 @@
 #!/usr/bin/env python3
 """
-update-env.py — UDMS environment manager
+update-env.py — UDMS environment variable & secret manager.
+
+Generates and updates ~/docker/.env by merging:
+  1. scripts/config.env  (TZ, SERVER_IP, DATADIR, DOCKER_ROOT)
+  2. .env.example        (template structure, defaults, and comments)
+  3. Existing ~/docker/.env (preserves secrets and custom overrides)
+
+Recomputes derived variables (PUID, PGID, DOCKER_GID, HOSTNAME, paths,
+HOMEPAGE_VAR_*_URL, STREMTHRU_STORE_AUTH) on every run without touching secrets.
 
 Usage:
-  python3 update-env.py            # update computed vars, preserve secrets
-  python3 update-env.py --init     # first-time setup, prompt for all secrets
-  python3 update-env.py --prompt TORBOX_API_KEY [VAR2 ...]  # re-prompt specific vars
+  python3 update-env.py                                  # update computed vars, preserve secrets
+  python3 update-env.py --init                           # first-time setup, prompt for all secrets
+  python3 update-env.py --prompt TORBOX_API_KEY [VAR2]   # re-prompt specific secret(s)
+
+When to use update-env.py vs. sync-config.sh:
+  - update-env.py: Manages Docker Compose environment variables & secrets in ~/docker/.env
+    (called automatically by udms.sh and deploy.sh; run manually after editing config.env
+    or to rotate API keys with --prompt).
+  - sync-config.sh: Replaces static app config files inside ~/docker/appdata/ (e.g.,
+    Homepage YAMLs, qBittorrent/Decypharr configs, docker-gc-exclude, .bash_aliases)
+    from repo templates in configs/, with timestamped backups.
 
 Must be run from the scripts/ directory (same as udms.sh).
 """
 
 import argparse
+import grp
 import os
 import sys
 
@@ -26,6 +43,7 @@ ENV_EXAMPLE  = os.path.join(REPO_ROOT, ".env.example")
 
 # These are resolved after we load config.env
 def get_env_file(config: dict) -> str:
+    """Return the path to the runtime .env file inside DOCKER_ROOT."""
     docker_root = config.get("DOCKER_ROOT", "")
     if not docker_root or "$" in docker_root:
         # Fallback: DOCKER_ROOT didn't expand properly, derive from HOME
@@ -38,7 +56,7 @@ def get_env_file(config: dict) -> str:
 # ---------------------------------------------------------------------------
 
 COMPUTED_VARS = {
-    "PUID", "PGID", "HOSTNAME", "USERDIR",
+    "PUID", "PGID", "DOCKER_GID", "HOSTNAME", "USERDIR",
     "DOCKERDIR", "SECRETSDIR",
     "HOMEPAGE_VAR_PORTAINER_URL",
     "HOMEPAGE_VAR_DOCKHAND_URL",
@@ -138,11 +156,13 @@ def parse_env_file(path: str) -> "list[tuple]":
 
 
 def entries_to_dict(entries: list) -> dict:
+    """Convert parsed .env entry tuples into a {key: value} dictionary."""
     return {k: v for t, (k, v) in (e for e in entries if e[0] == "var") 
             if True}
 
 
 def write_env_file(path: str, entries: list) -> None:
+    """Write parsed .env entry tuples back to disk, preserving comments and blanks."""
     with open(path, "w") as f:
         for kind, content in entries:
             if kind == "blank":
@@ -155,6 +175,7 @@ def write_env_file(path: str, entries: list) -> None:
 
 
 def prompt_secret(key: str, current: str) -> str:
+    """Prompt the user for a secret value, keeping the existing value on empty input."""
     display = f" [{current}]" if current else " [empty]"
     val = input(f"  {key}{display}: ").strip()
     return val if val else current
@@ -176,9 +197,15 @@ def compute_vars(config: dict, existing_vars: dict = None) -> dict:
         f"{stremthru_username}:torbox={torbox_key}" if torbox_key else ""
     )
 
+    try:
+        docker_gid = str(grp.getgrnam("docker").gr_gid)
+    except KeyError:
+        docker_gid = "970"
+
     return {
         "PUID":                          str(os.getuid()),
         "PGID":                          str(os.getgid()),
+        "DOCKER_GID":                    docker_gid,
         "HOSTNAME":                      os.uname().nodename,
         "USERDIR":                       os.path.expanduser("~"),
         "DOCKERDIR":                     docker_root,
@@ -204,6 +231,7 @@ def compute_vars(config: dict, existing_vars: dict = None) -> dict:
 # ---------------------------------------------------------------------------
 
 def update_env(init: bool = False, prompt_keys: list = None) -> None:
+    """Generate or update ~/docker/.env from config.env, .env.example, and prompts."""
     prompt_keys = prompt_keys or []
 
     # 1. Load config.env (user settings)
@@ -304,6 +332,7 @@ def update_env(init: bool = False, prompt_keys: list = None) -> None:
 # ---------------------------------------------------------------------------
 
 def main():
+    """Parse CLI flags (--init, --prompt) and run update_env."""
     parser = argparse.ArgumentParser(
         description="UDMS environment manager — updates ~/docker/.env from config.env"
     )

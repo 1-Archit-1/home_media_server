@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Deliberately replace selected runtime configuration files with backed-up templates.
+# sync-config.sh — Sync repo config templates into ~/docker/appdata/ or shell config.
+# Backs up each target file with a timestamp before overwriting it. Supports
+# --dry-run to preview changes and --yes to skip confirmation.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
