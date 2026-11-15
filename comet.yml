@@ -22,7 +22,7 @@ testlinktorrent: false
 requestDelay: 15
 links:
   - https://comet.elfhosted.com
-  - http://comet:8000
+  #- http://comet:8000
 
 caps:
   categories:

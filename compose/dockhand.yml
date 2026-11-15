@@ -1,0 +1,22 @@
+services:
+  # Dockhand - Modern Docker Management UI
+  # Replaces Portainer (container management) and Watchtower (auto-updates)
+  # Web UI: http://SERVER_IP:3001
+  # Docs: https://dockhand.pro/manual
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "3001:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $DOCKERDIR/appdata/dockhand:/app/data
+    group_add:
+      - "970"  # docker group GID on host — allows container to access docker.sock
+    environment:
+      TZ: $TZ

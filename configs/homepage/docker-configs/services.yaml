@@ -3,9 +3,9 @@
 # https://gethomepage.dev/latest/configs/services
 
 - Containers:
-    - Portainer:
-        icon: portainer.svg
-        href: "{{HOMEPAGE_VAR_PORTAINER_URL}}"
+    - Dockhand:
+        icon: dockhand.png
+        href: "{{HOMEPAGE_VAR_DOCKHAND_URL}}"
         description: docker management
     - Dozzle:
         icon: dozzle.svg

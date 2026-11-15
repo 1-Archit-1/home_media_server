@@ -23,7 +23,8 @@ include:
 
   # CORE
   - compose/socket-proxy.yml
-  - compose/portainer.yml
+  # - compose/portainer.yml  # replaced by Dockhand
+  - compose/dockhand.yml
   - compose/dozzle.yml
   - compose/homepage.yml
   # - compose/homarr.yml
@@ -53,5 +54,5 @@ include:
   # - compose/filebrowser.yml
   # MAINTENANCE
   - compose/docker-gc.yml
-  - compose/watchtower.yml
+  # - compose/watchtower.yml  # replaced by Dockhand (has built-in scheduled updates)
   - compose/rclone-backup.yml
