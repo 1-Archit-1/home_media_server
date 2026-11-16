@@ -26,7 +26,6 @@ include:
   # MEDIA
   - compose/jellyfin.yml
   - compose/remux.yml
-  # - compose/torbox-media-center.yml
   # - compose/strmbridge.yml
   - compose/stremthru.yml
   # DOWNLOADERS
@@ -50,5 +49,4 @@ include:
   # - compose/filebrowser.yml
   # MAINTENANCE
   - compose/docker-gc.yml
-  # - compose/watchtower.yml  # replaced by Dockhand (has built-in scheduled updates)
   - compose/rclone-backup.yml
