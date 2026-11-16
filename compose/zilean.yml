@@ -19,6 +19,7 @@ services:
       PUID: $PUID
       PGID: $PGID
       Zilean__EnableDashboard: "true"
+      Zilean__Imdb__NumberOfCores: "1"
       Zilean__Database__ConnectionString: "Host=zilean-postgres;Port=5432;Database=zilean;Username=postgres;Password=postgres"
     depends_on:
       zilean-postgres:

@@ -20,4 +20,5 @@ services:
       TZ: $TZ
       TS_STATE_DIR: /var/lib/tailscale
       TS_USERSPACE: "false"
+      TS_ROUTES: ${SERVER_IP}/32
       TS_AUTHKEY: ${TAILSCALE_AUTHKEY:-}
