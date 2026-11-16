@@ -16,6 +16,7 @@ include:
 
   # CORE
   - compose/socket-proxy.yml
+  - compose/traefik.yml
   - compose/tailscale.yml
   # - compose/portainer.yml  # replaced by Dockhand
   - compose/dockhand.yml

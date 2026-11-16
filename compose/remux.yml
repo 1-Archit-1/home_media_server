@@ -14,3 +14,8 @@ services:
     volumes:
       - $DOCKERDIR/appdata/remux:/data
       - $DATADIR/media:/data/media:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.remux.rule=Host(`remux.${DOMAINNAME}`)"
+      - "traefik.http.routers.remux.entrypoints=websecure"
+      - "traefik.http.services.remux.loadbalancer.server.port=3000"

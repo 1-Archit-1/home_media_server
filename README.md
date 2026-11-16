@@ -21,6 +21,7 @@ A self-hosted media server stack built on Docker, managed with Docker Compose. I
 | Service | Purpose | Port |
 |---|---|---|
 | Socket Proxy | Secure Docker socket access for other containers | internal |
+| Traefik | Reverse proxy with DuckDNS Let's Encrypt HTTPS (Jellyfin & Remux) | 80, 443 |
 | Tailscale | Private mesh VPN for remote access | host |
 | Dockhand | Docker container management UI & scheduled updates | 3001 |
 | Dozzle | Real-time container log viewer | 8082 |
@@ -437,6 +438,25 @@ Tailscale gives you private, encrypted access to every service from outside your
    Open the printed URL to sign in and click **Connect**.
 2. In the **Tailscale Admin Console** → **Machines** → **`...`** → **Edit route settings**, approve `YOUR_SERVER_IP/32`.
 3. Install Tailscale on your phone, laptop, or TV (Google TV / Apple TV / Fire TV) and sign into the same account. You can now open `http://YOUR_SERVER_IP:3000` (and all Homepage links) identically both at home and away.
+
+---
+
+## HTTPS Reverse Proxy (Traefik + DuckDNS)
+
+Traefik provides automatic wildcard HTTPS certificates via DuckDNS DNS-01 and exposes **only Jellyfin and Remux** (`jellyfin.<yoursub>.duckdns.org` and `remux.<yoursub>.duckdns.org`). All other services stay private to your LAN and Tailnet.
+
+1. On [duckdns.org](https://www.duckdns.org), create a subdomain and point it to either:
+   - Your **Tailscale IP** (`sudo docker exec tailscale tailscale ip -4`) for private HTTPS over Tailscale with no router port forwarding, or
+   - Your **home public IP** (requires forwarding ports `80` and `443` on your router).
+2. Set `DOMAINNAME`, `DUCKDNS_TOKEN`, and `ACME_EMAIL` in `~/docker/.env`:
+   ```bash
+   cd ~/home-server/scripts
+   python3 update-env.py --prompt DOMAINNAME DUCKDNS_TOKEN ACME_EMAIL
+   ./deploy.sh
+   ```
+3. Wait ~30–60 seconds for the Let's Encrypt wildcard cert, then open `https://jellyfin.<yoursub>.duckdns.org` and `https://remux.<yoursub>.duckdns.org`.
+
+*(Both Tailscale and Traefik are optional — if you only use LAN access, everything works without configuring them, or you can comment them out in `docker-compose.yml`.)*
 
 ---
 
