@@ -1,0 +1,51 @@
+services:
+  # Zilean - DMM Hashlist Indexer with Torznab API for Prowlarr/Sonarr/Radarr
+  # Web UI / Dashboard: http://SERVER_IP:8181
+  # Prowlarr Generic Torznab: URL http://zilean:8181, API Path /torznab/api
+  zilean:
+    image: ipromknight/zilean:latest
+    container_name: zilean
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "8181:8181"
+    volumes:
+      - $DOCKERDIR/appdata/zilean:/app/data
+    environment:
+      TZ: $TZ
+      PUID: $PUID
+      PGID: $PGID
+      Zilean__EnableDashboard: "true"
+      Zilean__Database__ConnectionString: "Host=zilean-postgres;Port=5432;Database=zilean;Username=postgres;Password=postgres"
+    depends_on:
+      zilean-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--connect-timeout", "10", "--silent", "--show-error", "--fail", "http://localhost:8181/healthchecks/ping"]
+      timeout: 60s
+      interval: 30s
+      retries: 5
+
+  zilean-postgres:
+    image: postgres:16-alpine
+    container_name: zilean-postgres
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - default
+    volumes:
+      - $DOCKERDIR/appdata/zilean-postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: zilean
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zilean"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

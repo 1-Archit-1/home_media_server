@@ -30,7 +30,9 @@ services:
       --exclude '*.log'
       --exclude '*.pid'
       --exclude 'cache/**'
-      --exclude 'logs/**' &&
+      --exclude 'logs/**'
+      --exclude 'zilean/**'
+      --exclude 'zilean-postgres/**' &&
       echo 'Initial sync complete. Scheduling daily backups at 3am...' &&
       while true; do
         sleep $$(( \( 3 * 3600 \) - \( \$(date +%H) * 3600 + \$(date +%M) * 60 + \$(date +%S) \) + 86400 \) % 86400 ));
@@ -40,7 +42,9 @@ services:
         --exclude '*.log'
         --exclude '*.pid'
         --exclude 'cache/**'
-        --exclude 'logs/**' &&
+        --exclude 'logs/**'
+        --exclude 'zilean/**'
+        --exclude 'zilean-postgres/**' &&
         echo 'Backup complete.';
       done"
     volumes:

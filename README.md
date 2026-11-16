@@ -31,10 +31,10 @@ A self-hosted media server stack built on Docker, managed with Docker Compose. I
 | Sonarr | TV show automation | 8989 |
 | Radarr | Movie automation | 7878 |
 | Prowlarr | Indexer manager for Sonarr/Radarr | 9696 |
+| Zilean | DMM hashlist indexer with Torznab API | 8181 |
 | Bazarr | Subtitle downloader | 6767 |
 | Docker GC | Nightly cleanup of unused images | — |
 | Rclone Backup | Daily appdata backup to Google Drive | — |
-| StrmBridge | Syncs TorBox cloud library to .strm files with proper movie/show structure | 9847 |
 | StremThru | Stremio companion: Torz debrid search addon + Store proxy backend | 8080 |
 
 All media lives at `$DATADIR` (default: `/media/storage`). All app configs live at `~/docker/appdata/`.
@@ -137,8 +137,8 @@ Once the script completes, all services are available at `http://YOUR_SERVER_IP:
 | Sonarr | http://SERVER_IP:8989 |
 | Radarr | http://SERVER_IP:7878 |
 | Prowlarr | http://SERVER_IP:9696 |
+| Zilean | http://SERVER_IP:8181 |
 | Bazarr | http://SERVER_IP:6767 |
-| StrmBridge | http://SERVER_IP:9847 |
 | StremThru | http://SERVER_IP:8080 |
 | Cockpit | http://SERVER_IP:9090 |
 
@@ -151,8 +151,14 @@ After the containers are running, configure the services through their web UIs i
 ### 1. Prowlarr — Add indexers
 
 1. Go to `http://SERVER_IP:9696`
-2. **Indexers → Add Indexer** — search and add your preferred indexers (e.g. 1337x, RARBG, etc.)
-3. **Settings → Apps → Add Application**:
+2. **Add Zilean (built-in DMM indexer):**
+   - **Indexers → Add Indexer → Generic Torznab**
+   - **URL:** `http://zilean:8181`
+   - **API Path:** `/torznab/api`
+   - **API Key:** leave blank (or any dummy text if required)
+   - *(Note: on first boot, wait a few minutes for `zilean` to finish importing DMM hashlists before testing.)*
+3. **Indexers → Add Indexer** — add any other preferred indexers (1337x, etc., or custom definitions like StremThru/AIOStreams below)
+4. **Settings → Apps → Add Application**:
    - Add Radarr: host `radarr`, port `7878`, API key from Radarr Settings → General
    - Add Sonarr: host `sonarr`, port `8989`, API key from Sonarr Settings → General
 
@@ -225,7 +231,9 @@ Install the Bazarr plugin in Jellyfin so subtitles fetched by Bazarr are automat
 
 ---
 
-## TorBox Cloud Library (StrmBridge)
+## TorBox Cloud Library (StrmBridge — Optional / Disabled by Default)
+
+> Disabled by default in `docker-compose.yml` (Remux is used for direct streaming). To enable StrmBridge, uncomment `- compose/strmbridge.yml` in `docker-compose.yml` and run `./scripts/deploy.sh`.
 
 StrmBridge syncs your TorBox cloud account to `.strm` files that Jellyfin can stream directly — no local storage needed. It runs independently of Sonarr/Radarr and gives you a browsable view of everything in your TorBox account.
 
@@ -313,6 +321,9 @@ cp ~/home-server/torrentio.yml ~/docker/appdata/prowlarr/Definitions/Custom/torr
 
 # Comet — debrid search addon (requires a running Comet instance)
 cp ~/home-server/comet.yml ~/docker/appdata/prowlarr/Definitions/Custom/comet.yml
+
+# AIOStreams (API) — queries an AIOStreams Search API instance (set your Base URL & Base64 auth in Prowlarr)
+cp ~/home-server/aiostreams-api.yml ~/docker/appdata/prowlarr/Definitions/Custom/aiostreams-api.yml
 
 # Restart Prowlarr to pick up the new definitions
 dcrec prowlarr

@@ -21,6 +21,10 @@
         icon: remux.svg
         href: "{{HOMEPAGE_VAR_REMUX_URL}}"
         description: media server
+    - StremThru:
+        icon: mdi-lightning-bolt
+        href: "{{HOMEPAGE_VAR_STREMTHRU_URL}}"
+        description: stremio debrid proxy
 - Downloads:
     - qBittorrent:
         icon: qbittorrent.svg
@@ -44,6 +48,10 @@
         icon: prowlarr.svg
         href: "{{HOMEPAGE_VAR_PROWLARR_URL}}"
         description: indexer manager
+    - Zilean:
+        icon: mdi-database-search
+        href: "{{HOMEPAGE_VAR_ZILEAN_URL}}"
+        description: dmm hashlist indexer
     - Bazarr:
         icon: bazarr.svg
         href: "{{HOMEPAGE_VAR_BAZARR_URL}}"

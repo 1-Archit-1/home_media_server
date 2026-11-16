@@ -2,7 +2,7 @@ services:
   # Docker Socket Proxy - Security Enchanced Proxy for Docker Socket
   socket-proxy:
     container_name: socket-proxy
-    image: tecnativa/docker-socket-proxy
+    image: lscr.io/linuxserver/socket-proxy:latest
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
@@ -27,12 +27,13 @@ services:
       # Security critical
       - AUTH=0
       - SECRETS=0
-      - POST=1 # Watchtower
+      - POST=1 # Docker-GC
       # Not always needed
       - BUILD=0
       - COMMIT=0
       - CONFIGS=0
       - CONTAINERS=1 # Traefik, Portainer, etc.
+      - ALLOW_LOGS=1 # Dozzle (linuxserver/socket-proxy gates /containers/*/logs separately)
       - DISTRIBUTION=0
       - EXEC=0
       - IMAGES=1 # Portainer
