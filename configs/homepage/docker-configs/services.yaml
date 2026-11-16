@@ -18,7 +18,7 @@
         href: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
         description: media server
     - Remux:
-        icon: remux.svg
+        icon: https://raw.githubusercontent.com/lostb1t/remux/main/logo.png
         href: "{{HOMEPAGE_VAR_REMUX_URL}}"
         description: media server
     - StremThru:

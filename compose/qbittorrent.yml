@@ -23,5 +23,3 @@ services:
       interval: 1m
       timeout: 10s
       retries: 3
-    labels: # Traefik labels added via glueten
-      - "deunhealth.restart.on.unhealthy=true"

@@ -1,0 +1,23 @@
+services:
+  # Tailscale - Zero-config mesh VPN for private remote access to all services
+  # First-time setup (if not using TAILSCALE_AUTHKEY in .env):
+  #   sudo docker exec -it tailscale tailscale up
+  #   Open the printed URL in a browser to sign in and authorize this host.
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    hostname: ${HOSTNAME:-homeserver}
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+    volumes:
+      - $DOCKERDIR/appdata/tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      TZ: $TZ
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_AUTHKEY: ${TAILSCALE_AUTHKEY:-}

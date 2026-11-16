@@ -21,6 +21,7 @@ A self-hosted media server stack built on Docker, managed with Docker Compose. I
 | Service | Purpose | Port |
 |---|---|---|
 | Socket Proxy | Secure Docker socket access for other containers | internal |
+| Tailscale | Private mesh VPN for remote access | host |
 | Dockhand | Docker container management UI & scheduled updates | 3001 |
 | Dozzle | Real-time container log viewer | 8082 |
 | Homepage | Main dashboard | 3000 |
@@ -422,6 +423,20 @@ sudo docker restart rclone-backup
 ```
 
 Backups run daily at 3am to `homeserver-backup/appdata/` in your Google Drive.
+
+---
+
+## Remote Access (Tailscale)
+
+Tailscale gives you private, encrypted access to every service from outside your home network with no open router ports.
+
+1. Authorize the server and advertise its LAN IP (`/32`) as a subnet route:
+   ```bash
+   sudo docker exec -it tailscale tailscale up --accept-dns=false --advertise-routes=YOUR_SERVER_IP/32
+   ```
+   Open the printed URL to sign in and click **Connect**.
+2. In the **Tailscale Admin Console** → **Machines** → **`...`** → **Edit route settings**, approve `YOUR_SERVER_IP/32`.
+3. Install Tailscale on your phone, laptop, or TV (Google TV / Apple TV / Fire TV) and sign into the same account. You can now open `http://YOUR_SERVER_IP:3000` (and all Homepage links) identically both at home and away.
 
 ---
 
