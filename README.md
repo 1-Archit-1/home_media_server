@@ -168,6 +168,7 @@ After the containers are running, configure the services through their web UIs i
 
 1. Go to `http://SERVER_IP:8282` and complete the setup wizard
 2. **Add your debrid provider** — select TorBox and enter your API key from [torbox.app](https://torbox.app) → Settings → API
+   - Set **Rate Limit** to `60/minute` and **Workers** to `1` (higher concurrency can trigger TorBox `400` link-resolution errors on large season packs)
 3. **Downloads folder**: `/data/downloads`
 4. **Download action** — choose one:
    - **Download (recommended)** — files are fully downloaded to your server. Uses disk space but files are permanent regardless of TorBox retention.
